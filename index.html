@@ -1,127 +1,228 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-
-  <title>Angel Collaboration Workshop</title>
-  <meta name="description" content="Angel Collaboration Workshop – a growing space for tools, practice, and co-creation." />
-
-  <!-- PWA -->
-  <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#f5f6f7" />
 
-  <!-- iOS support -->
-  <link rel="apple-touch-icon" href="./assets/icons/icon-1024.png" />
+  <title>Angel Collab Workshop</title>
+  <meta name="description" content="A lightweight collaboration workshop hub for tools, notes, and prompts." />
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="./manifest.json?v=1" />
+
+  <!-- App Icon (iOS backup) -->
+  <link rel="apple-touch-icon" href="./assets/icons/icon-1024.png?v=1" />
+
+  <!-- Favicon (optional but helpful) -->
+  <link rel="icon" href="./assets/icons/icon-1024.png?v=1" />
 
   <style>
     :root{
       --bg:#f5f6f7;
       --card:#ffffff;
       --text:#111;
-      --muted:#666;
-      --line:#e6e6e6;
-      --radius:16px;
+      --muted:#6b7280;
+      --line:#e7e7e7;
+      --shadow:0 10px 30px rgba(0,0,0,.06);
+      --radius:22px;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", Arial, sans-serif;
       background:var(--bg);
       color:var(--text);
     }
     .wrap{
-      max-width:420px;
+      max-width:720px;
       margin:0 auto;
-      padding:20px 16px 40px;
+      padding:22px 16px 40px;
     }
     .card{
       background:var(--card);
+      border:1px solid var(--line);
       border-radius:var(--radius);
-      padding:20px;
-      box-shadow:0 6px 20px rgba(0,0,0,.04);
-      margin-bottom:16px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
-    .header{
+    .hero{
+      padding:18px 18px 8px;
       display:flex;
-      gap:16px;
+      gap:14px;
       align-items:center;
     }
-    .app-icon{
-      width:72px;
-      height:72px;
+    .appicon{
+      width:76px;
+      height:76px;
       border-radius:18px;
       border:1px solid var(--line);
+      background:#fff;
+      display:grid;
+      place-items:center;
       overflow:hidden;
-      flex-shrink:0;
+      flex:0 0 auto;
     }
-    .app-icon img{
+    .appicon img{
       width:100%;
       height:100%;
       object-fit:cover;
+      display:block;
     }
     h1{
-      font-size:22px;
-      margin:0 0 6px;
-    }
-    p{
       margin:0;
+      font-size:26px;
+      letter-spacing:.5px;
+    }
+    .sub{
+      margin:6px 0 0;
       color:var(--muted);
       line-height:1.5;
-      font-size:14px;
     }
-    .section-title{
-      font-weight:600;
-      margin-bottom:8px;
+    .divider{
+      height:1px;
+      background:var(--line);
+      margin:12px 0 0;
     }
-    .hint{
-      font-size:13px;
+    .section{
+      padding:16px 18px 18px;
+      display:grid;
+      gap:12px;
+    }
+    .pill{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px 14px;
+      background:#fff;
+    }
+    .pill h2{
+      margin:0 0 10px;
+      font-size:18px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .small{
       color:var(--muted);
-      border:1px dashed var(--line);
-      border-radius:12px;
-      padding:12px;
-      background:#fafafa;
+      line-height:1.7;
+      font-size:14px;
+      margin:0;
     }
+    .path{
+      margin-top:10px;
+      padding:12px 12px;
+      border:1px dashed #d7d7d7;
+      border-radius:14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:14px;
+      background:#fafafa;
+      word-break:break-all;
+    }
+    .btnrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:14px;
+      cursor:pointer;
+    }
+    .btn:active{transform:translateY(1px)}
+    .toast{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:18px;
+      background:rgba(17,17,17,.92);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:13px;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s ease;
+    }
+    .toast.show{opacity:1}
   </style>
 </head>
 
 <body>
   <main class="wrap">
-
-    <!-- Header -->
-    <section class="card header">
-      <div class="app-icon">
-        <img src="./assets/icons/icon-1024.png" alt="Angel Workshop Icon">
+    <section class="card" aria-label="Angel Collab Workshop">
+      <div class="hero">
+        <div class="appicon" aria-hidden="true">
+          <img
+            src="./assets/icons/icon-1024.png?v=1"
+            alt=""
+            loading="eager"
+            onerror="this.onerror=null;this.src='./assets/icons/icon-1024.png?v=2';"
+          />
+        </div>
+        <div>
+          <h1>天使工作坊</h1>
+          <p class="sub">協作工坊母體｜先讓它能跑起來，再慢慢長成你要的樣子。</p>
+        </div>
       </div>
-      <div>
-        <h1>Angel Workshop</h1>
-        <p>
-          Collaboration workshop core.<br>
-          Let it run first, then grow it step by step.
-        </p>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="pill">
+          <h2>✅ 你已完成：repo 結構 + icon + manifest</h2>
+          <p class="small">下一步：開啟 GitHub Pages，讓它上線。</p>
+        </div>
+
+        <div class="pill">
+          <h2>📌 Icon Path (English only)</h2>
+          <div class="path">assets/icons/icon-1024.png</div>
+          <p class="small" style="margin-top:10px;">
+            提醒：GitHub Pages 對大小寫很敏感（icons ≠ Icons）。
+          </p>
+          <div class="btnrow">
+            <button class="btn" type="button" id="btnCopy">Copy path</button>
+            <button class="btn" type="button" id="btnOpen">Open icon</button>
+          </div>
+        </div>
+
+        <div class="pill">
+          <h2>🌿 下一步（骨架先放好）</h2>
+          <p class="small">
+            之後我們會把工坊做成：工具存放區、影音備註、表單入口（可選）、咒語包區。<br/>
+            先骨架，先能用；再一個一個長出工具。
+          </p>
+        </div>
       </div>
     </section>
-
-    <!-- Status -->
-    <section class="card">
-      <div class="section-title">Current Status</div>
-      <div class="hint">
-        ✓ Repository created<br>
-        ✓ index.html in place<br>
-        ✓ Ready to add assets and tools
-      </div>
-    </section>
-
-    <!-- Next -->
-    <section class="card">
-      <div class="section-title">Next Step</div>
-      <div class="hint">
-        1. Add <code>manifest.json</code><br>
-        2. Create <code>assets/icons/</code><br>
-        3. Upload icon-1024.png
-      </div>
-    </section>
-
   </main>
+
+  <div class="toast" id="toast">Copied</div>
+
+  <script>
+    const toast = document.getElementById('toast');
+    const showToast = (msg) => {
+      toast.textContent = msg || 'Done';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1100);
+    };
+
+    document.getElementById('btnCopy').addEventListener('click', async () => {
+      const text = 'assets/icons/icon-1024.png';
+      try{
+        await navigator.clipboard.writeText(text);
+        showToast('Copied');
+      }catch(e){
+        showToast('Copy failed');
+      }
+    });
+
+    document.getElementById('btnOpen').addEventListener('click', () => {
+      window.open('./assets/icons/icon-1024.png?v=1', '_blank');
+    });
+  </script>
 </body>
 </html>
