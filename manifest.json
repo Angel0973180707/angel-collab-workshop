@@ -1,14 +1,16 @@
 {
-  "name": "Angel Collaboration Workshop",
+  "name": "Angel Collab Workshop",
   "short_name": "Angel Workshop",
-  "start_url": "./index.html",
+  "description": "A lightweight collaboration workshop hub for tools, notes, and prompts.",
+  "start_url": "./?source=pwa",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f5f6f7",
   "theme_color": "#f5f6f7",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "assets/icons/icon-1024.png",
+      "src": "assets/icons/icon-1024.png?v=1",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
