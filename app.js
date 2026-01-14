@@ -1,193 +1,322 @@
-(function () {
-  const LS_KEY = "acw_tools_v1";
-  const LS_NOTES = "acw_notes_v1";
+/* Angel Collab Workshop - Tool Cards + Tool Detail (autosave) */
 
-  const $ = (id) => document.getElementById(id);
+const LS_KEY = "angel_workshop_tools_v2";
+const $ = (id) => document.getElementById(id);
 
-  const toolList = $("toolList");
-  const emptyState = $("emptyState");
+const viewList = $("viewList");
+const viewDetail = $("viewDetail");
 
-  const dlg = $("dlgAddTool");
-  const btnAddTool = $("btnAddTool");
-  const btnReset = $("btnReset");
-  const btnSaveNotes = $("btnSaveNotes");
-  const notesStatus = $("notesStatus");
+const cardList = $("cardList");
+const emptyState = $("emptyState");
 
-  const toolName = $("toolName");
-  const toolDesc = $("toolDesc");
-  const toolLink = $("toolLink");
-  const btnCancel = $("btnCancel");
+const btnAdd = $("btnAdd");
+const btnAddFromEmpty = $("btnAddFromEmpty");
+const toolModal = $("toolModal");
 
-  const workshopNotes = $("workshopNotes");
+const inpId = $("inpId");
+const inpName = $("inpName");
+const inpPurpose = $("inpPurpose");
+const inpLink = $("inpLink");
+const modalTitle = $("modalTitle");
 
-  function safeParse(json, fallback) {
-    try { return JSON.parse(json); } catch { return fallback; }
+const btnBack = $("btnBack");
+const btnDelete = $("btnDelete");
+const btnEdit = $("btnEdit");
+const btnCopyPrompt = $("btnCopyPrompt");
+
+const detailTitle = $("detailTitle");
+const detailPurpose = $("detailPurpose");
+const detailNote = $("detailNote");
+const detailUpdated = $("detailUpdated");
+const mantraBox = $("mantraBox");
+
+const toastEl = $("toast");
+
+// Install prompt
+const btnInstall = $("btnInstall");
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  btnInstall.hidden = false;
+});
+btnInstall?.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  btnInstall.hidden = true;
+});
+
+function nowISO() {
+  return new Date().toISOString();
+}
+function formatTime(iso) {
+  try { return new Date(iso).toLocaleString(); }
+  catch { return iso; }
+}
+function toast(msg="已完成") {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  setTimeout(()=> toastEl.classList.remove("show"), 1200);
+}
+
+function loadTools() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+function saveTools(list) {
+  localStorage.setItem(LS_KEY, JSON.stringify(list));
+}
+
+function uid() {
+  return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+}
+
+function makePromptForTool(t) {
+  // Keep it minimal & brand-toned
+  return `你是「天使笑長」的協作夥伴。
+品牌語感：把心站穩、活得自在；不說教、溫柔而篤定；要有畫面感；要可落地。
+
+【工具名稱】${t.name}
+【一句用途】${t.purpose || "（可補一句）"}
+
+我希望你幫我：
+1) 再給我 3 個「同氣質」的一句用途（短、安靜）
+2) 給我 1 個「不破壞狀態」的 60 秒小動作（可選做）
+3) 給我 1 個「可選輸入」提示句（不要求寫）
+輸出：短段落 + 條列。`;
+}
+
+function isInspirationKeeper(t) {
+  const name = (t?.name || "").toLowerCase();
+  return name.includes("inspiration keeper") || (t?.name || "").includes("靈感守門人");
+}
+
+function renderList() {
+  const list = loadTools();
+
+  cardList.innerHTML = "";
+  if (!list.length) {
+    emptyState.hidden = false;
+    return;
+  }
+  emptyState.hidden = true;
+
+  for (const t of list) {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.dataset.id = t.id;
+
+    const title = document.createElement("div");
+    title.className = "cardTitle";
+    title.textContent = t.name;
+
+    const purpose = document.createElement("div");
+    purpose.className = "cardPurpose";
+    purpose.textContent = t.purpose || "（尚未填一句用途）";
+
+    div.appendChild(title);
+    div.appendChild(purpose);
+
+    if (t.link) {
+      const link = document.createElement("div");
+      link.className = "cardLink";
+      link.textContent = t.link;
+      div.appendChild(link);
+    }
+
+    div.addEventListener("click", () => openDetail(t.id));
+    cardList.appendChild(div);
+  }
+}
+
+let currentToolId = null;
+let noteSaveTimer = null;
+
+function openDetail(id) {
+  const list = loadTools();
+  const t = list.find(x => x.id === id);
+  if (!t) return;
+
+  currentToolId = id;
+
+  detailTitle.textContent = t.name;
+  detailPurpose.textContent = t.purpose || "（尚未填一句用途）";
+  detailNote.value = t.note || "";
+  detailUpdated.textContent = `更新：${formatTime(t.updatedAt || t.createdAt || nowISO())}`;
+
+  mantraBox.hidden = !isInspirationKeeper(t);
+
+  viewList.hidden = true;
+  viewDetail.hidden = false;
+
+  // focus without forcing
+  setTimeout(() => detailNote.focus({ preventScroll: true }), 0);
+}
+
+function closeDetail() {
+  currentToolId = null;
+  viewDetail.hidden = true;
+  viewList.hidden = false;
+}
+
+function openModalForCreate() {
+  inpId.value = "";
+  inpName.value = "";
+  inpPurpose.value = "";
+  inpLink.value = "";
+  modalTitle.textContent = "新增工具";
+  toolModal.showModal();
+}
+function openModalForEdit(id) {
+  const list = loadTools();
+  const t = list.find(x => x.id === id);
+  if (!t) return;
+
+  inpId.value = t.id;
+  inpName.value = t.name || "";
+  inpPurpose.value = t.purpose || "";
+  inpLink.value = t.link || "";
+  modalTitle.textContent = "編輯工具卡片";
+  toolModal.showModal();
+}
+
+function upsertToolFromModal() {
+  const id = inpId.value.trim();
+  const name = inpName.value.trim();
+  const purpose = inpPurpose.value.trim();
+  const link = inpLink.value.trim();
+
+  if (!name) return;
+
+  const list = loadTools();
+
+  if (!id) {
+    // create
+    const t = {
+      id: uid(),
+      name,
+      purpose,
+      link,
+      note: "",
+      createdAt: nowISO(),
+      updatedAt: nowISO()
+    };
+    list.unshift(t);
+  } else {
+    // update
+    const t = list.find(x => x.id === id);
+    if (t) {
+      t.name = name;
+      t.purpose = purpose;
+      t.link = link;
+      t.updatedAt = nowISO();
+    }
   }
 
-  function loadTools() {
-    return safeParse(localStorage.getItem(LS_KEY) || "[]", []);
-  }
+  saveTools(list);
+  renderList();
+  toast("已儲存");
+}
 
-  function saveTools(tools) {
-    localStorage.setItem(LS_KEY, JSON.stringify(tools));
-  }
+function deleteCurrentTool() {
+  if (!currentToolId) return;
+  const ok = confirm("確定刪除這個工具？（本機）");
+  if (!ok) return;
 
-  function render() {
-    const tools = loadTools();
-    toolList.innerHTML = "";
+  const list = loadTools().filter(x => x.id !== currentToolId);
+  saveTools(list);
+  toast("已刪除");
+  closeDetail();
+  renderList();
+}
 
-    emptyState.style.display = tools.length ? "none" : "block";
+function scheduleAutosaveNote() {
+  if (!currentToolId) return;
+  if (noteSaveTimer) clearTimeout(noteSaveTimer);
 
-    tools.forEach((t, idx) => {
-      const el = document.createElement("div");
-      el.className = "tool";
+  noteSaveTimer = setTimeout(() => {
+    const list = loadTools();
+    const t = list.find(x => x.id === currentToolId);
+    if (!t) return;
 
-      const title = escapeHtml(t.name || "Untitled");
-      const desc = escapeHtml(t.desc || "");
-      const link = (t.link || "").trim();
+    t.note = detailNote.value;
+    t.updatedAt = nowISO();
+    saveTools(list);
 
-      el.innerHTML = `
-        <div class="tool-main">
-          <p class="tool-title">${title}</p>
-          <p class="tool-desc">${desc}</p>
-          ${link ? `<p class="tool-desc"><a class="link" href="${escapeAttr(link)}" target="_blank" rel="noopener">Open link</a></p>` : ""}
-        </div>
+    detailUpdated.textContent = `更新：${formatTime(t.updatedAt)}`;
+    // silent save (no noisy toast)
+  }, 250);
+}
 
-        <div class="tool-actions">
-          <button class="icon-btn" data-act="edit" data-idx="${idx}" type="button" title="Edit">✎</button>
-          <button class="icon-btn" data-act="del" data-idx="${idx}" type="button" title="Delete">🗑</button>
-        </div>
-      `;
+// Events
+btnAdd.addEventListener("click", openModalForCreate);
+btnAddFromEmpty?.addEventListener("click", openModalForCreate);
 
-      toolList.appendChild(el);
-    });
-  }
-
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, (m) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      "\"": "&quot;",
-      "'": "&#39;"
-    }[m]));
-  }
-
-  function escapeAttr(str) {
-    // minimal for href
-    return String(str).replace(/"/g, "&quot;");
-  }
-
-  function openDialog() {
-    toolName.value = "";
-    toolDesc.value = "";
-    toolLink.value = "";
-    if (typeof dlg.showModal === "function") dlg.showModal();
-    else alert("Dialog not supported on this browser. Please use Chrome.");
-    toolName.focus();
-  }
-
-  function closeDialog() {
-    if (dlg.open) dlg.close();
-  }
-
-  function addTool(name, desc, link) {
-    const tools = loadTools();
-    tools.push({
-      id: cryptoId(),
-      name: (name || "").trim() || "New Tool",
-      desc: (desc || "").trim(),
-      link: (link || "").trim(),
-      createdAt: Date.now()
-    });
-    saveTools(tools);
-    render();
-  }
-
-  function updateTool(idx, patch) {
-    const tools = loadTools();
-    if (!tools[idx]) return;
-    tools[idx] = { ...tools[idx], ...patch };
-    saveTools(tools);
-    render();
-  }
-
-  function deleteTool(idx) {
-    const tools = loadTools();
-    tools.splice(idx, 1);
-    saveTools(tools);
-    render();
-  }
-
-  function cryptoId() {
-    // simple id
-    return Math.random().toString(16).slice(2) + Date.now().toString(16);
-  }
-
-  // Events
-  btnAddTool.addEventListener("click", openDialog);
-  btnCancel.addEventListener("click", closeDialog);
-
-  dlg.addEventListener("submit", (e) => {
+$("toolForm").addEventListener("submit", (e) => {
+  // dialog submit
+  // only save when user pressed OK button
+  const submitter = e.submitter;
+  if (submitter && submitter.id === "btnSaveTool") {
     e.preventDefault();
-    addTool(toolName.value, toolDesc.value, toolLink.value);
-    closeDialog();
-  });
-
-  toolList.addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-act]");
-    if (!btn) return;
-
-    const act = btn.dataset.act;
-    const idx = Number(btn.dataset.idx);
-
-    if (act === "del") {
-      const ok = confirm("Delete this tool?");
-      if (ok) deleteTool(idx);
-      return;
-    }
-
-    if (act === "edit") {
-      const tools = loadTools();
-      const t = tools[idx];
-      if (!t) return;
-
-      const name = prompt("Tool Name:", t.name || "");
-      if (name === null) return;
-
-      const desc = prompt("One-line Purpose:", t.desc || "");
-      if (desc === null) return;
-
-      const link = prompt("Optional Link (keep empty if none):", t.link || "");
-      if (link === null) return;
-
-      updateTool(idx, { name: name.trim(), desc: desc.trim(), link: link.trim() });
-    }
-  });
-
-  // Notes
-  function loadNotes() {
-    workshopNotes.value = localStorage.getItem(LS_NOTES) || "";
+    upsertToolFromModal();
+    toolModal.close();
   }
-  function saveNotes() {
-    localStorage.setItem(LS_NOTES, workshopNotes.value || "");
-    notesStatus.textContent = "Saved.";
-    setTimeout(() => (notesStatus.textContent = ""), 1200);
+});
+
+btnBack.addEventListener("click", () => {
+  closeDetail();
+  renderList();
+});
+
+btnDelete.addEventListener("click", deleteCurrentTool);
+
+btnEdit.addEventListener("click", () => {
+  if (!currentToolId) return;
+  openModalForEdit(currentToolId);
+});
+
+btnCopyPrompt.addEventListener("click", async () => {
+  if (!currentToolId) return;
+  const list = loadTools();
+  const t = list.find(x => x.id === currentToolId);
+  if (!t) return;
+
+  const prompt = makePromptForTool(t);
+  await copyText(prompt);
+  toast("已複製咒語");
+});
+
+detailNote.addEventListener("input", scheduleAutosaveNote);
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
   }
+}
 
-  btnSaveNotes.addEventListener("click", saveNotes);
+// Seed: if user has already created Inspiration Keeper, do nothing.
+// If no tools, we can optionally create a preset? (keep quiet: OFF by default)
+function boot() {
+  renderList();
 
-  // Reset
-  btnReset.addEventListener("click", () => {
-    const ok = confirm("Reset local tools + notes on this device?");
-    if (!ok) return;
-    localStorage.removeItem(LS_KEY);
-    localStorage.removeItem(LS_NOTES);
-    loadNotes();
-    render();
-  });
+  // register SW
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+}
 
-  // Init
-  loadNotes();
-  render();
-})();
+boot();
