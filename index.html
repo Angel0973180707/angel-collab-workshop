@@ -1,6 +1,5 @@
-<!-- index.html (FULL OVERWRITE) -->
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -10,524 +9,118 @@
 
   <title>Angel Collab Workshop</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./assets/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192.png" />
 
-  <!-- Icons (English paths only) -->
-  <link rel="icon" href="./assets/icons/icon-1024.png" />
-  <link rel="apple-touch-icon" href="./assets/icons/icon-1024.png" />
-
-  <style>
-    :root{
-      --bg:#0b1220;
-      --card:rgba(255,255,255,.08);
-      --card2:rgba(255,255,255,.06);
-      --stroke:rgba(255,255,255,.14);
-      --text:rgba(255,255,255,.92);
-      --muted:rgba(255,255,255,.68);
-      --soft:rgba(255,255,255,.5);
-      --accent:rgba(120,170,255,.85);
-      --ok:rgba(120,255,180,.9);
-      --warn:rgba(255,210,120,.9);
-      --danger:rgba(255,120,120,.9);
-      --radius:22px;
-      --shadow: 0 20px 60px rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 900px at 20% 10%, rgba(140,170,255,.18), transparent 60%),
-                  radial-gradient(900px 700px at 80% 0%, rgba(255,180,220,.14), transparent 55%),
-                  radial-gradient(1000px 900px at 70% 90%, rgba(120,255,200,.10), transparent 60%),
-                  var(--bg);
-      color:var(--text);
-      -webkit-font-smoothing: antialiased;
-      padding: 18px 14px 40px;
-    }
-    .wrap{max-width:900px;margin:0 auto}
-    .panel{
-      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .hero{
-      display:flex;
-      gap:16px;
-      padding: 20px 18px;
-      align-items:center;
-    }
-    .appicon{
-      width:86px;height:86px;
-      border-radius: 22px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.18);
-      box-shadow: 0 16px 40px rgba(0,0,0,.25);
-      display:flex;align-items:center;justify-content:center;
-      overflow:hidden;
-      flex: 0 0 auto;
-    }
-    .appicon img{width:100%;height:100%;object-fit:cover}
-    h1{
-      margin:0;
-      font-size: 34px;
-      letter-spacing:.2px;
-      line-height:1.05;
-    }
-    .sub{
-      margin-top:8px;
-      color:var(--muted);
-      font-size:16px;
-      line-height:1.35;
-    }
-    .bar{
-      display:flex; gap:10px; flex-wrap:wrap;
-      margin-top:14px;
-    }
-    .btn{
-      appearance:none;
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.08);
-      color:var(--text);
-      border-radius: 16px;
-      padding: 10px 14px;
-      font-weight: 650;
-      cursor:pointer;
-      box-shadow: 0 10px 30px rgba(0,0,0,.18);
-      transition: transform .12s ease, background .12s ease, border-color .12s ease;
-    }
-    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.10)}
-    .btn:active{transform: translateY(0px)}
-    .btn.primary{border-color: rgba(140,170,255,.35); background: rgba(120,170,255,.16)}
-    .btn.ghost{background: rgba(255,255,255,.06)}
-    .btn.danger{border-color: rgba(255,120,120,.35); background: rgba(255,120,120,.12)}
-    .divider{height:1px;background: rgba(255,255,255,.10)}
-    .content{padding: 18px}
-    .sectionTitle{
-      font-size: 22px;
-      margin: 0 0 10px;
-      letter-spacing:.2px;
-    }
-    .hint{
-      color: var(--muted);
-      margin: 0 0 16px;
-      line-height: 1.45;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    @media(min-width:720px){
-      .grid{grid-template-columns: 1fr 1fr;}
-    }
-
-    .tool{
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      border-radius: 18px;
-      padding: 14px;
-      overflow:hidden;
-    }
-    .row{display:flex;gap:10px;align-items:flex-start}
-    .check{
-      margin-top:2px;
-      width:22px;height:22px;
-      accent-color: rgba(120,255,180,.85);
-      flex:0 0 auto;
-    }
-    .tool h3{
-      margin:0;
-      font-size: 16px;
-      line-height:1.25;
-    }
-    .meta{
-      color: var(--soft);
-      font-size: 12px;
-      margin-top: 4px;
-    }
-    .note{
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.45;
-      white-space: pre-wrap;
-    }
-    .actions{
-      display:flex;
-      gap:8px;
-      margin-top: 12px;
-      flex-wrap:wrap;
-    }
-    .pill{
-      font-size: 12px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      cursor:pointer;
-      color: var(--text);
-    }
-    .pill.ok{border-color: rgba(120,255,180,.30); background: rgba(120,255,180,.10)}
-    .pill.warn{border-color: rgba(255,210,120,.30); background: rgba(255,210,120,.10)}
-    .pill.danger{border-color: rgba(255,120,120,.30); background: rgba(255,120,120,.10)}
-    .pill:active{transform: translateY(1px)}
-
-    .promptBox{
-      margin-top: 12px;
-      border-top: 1px solid rgba(255,255,255,.10);
-      padding-top: 12px;
-      display:none;
-    }
-    .promptBox.show{display:block}
-    .promptLabel{
-      font-size: 12px;
-      color: var(--soft);
-      margin-bottom: 8px;
-    }
-    textarea{
-      width:100%;
-      min-height: 120px;
-      resize: vertical;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.20);
-      color: var(--text);
-      padding: 12px;
-      outline: none;
-      line-height: 1.45;
-    }
-    .toast{
-      position: fixed;
-      left: 50%;
-      bottom: 16px;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,.72);
-      border: 1px solid rgba(255,255,255,.14);
-      color: rgba(255,255,255,.92);
-      padding: 10px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .18s ease, transform .18s ease;
-    }
-    .toast.show{opacity:1; transform: translateX(-50%) translateY(-4px)}
-  </style>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="panel">
-      <div class="hero">
-        <div class="appicon" aria-hidden="true">
-          <img src="./assets/icons/icon-1024.png" alt="" />
-        </div>
-        <div>
-          <h1>Angel Collab Workshop</h1>
-          <div class="sub">A calm workspace hub. Start simple, grow later.</div>
-          <div class="bar">
-            <button class="btn primary" id="btnAdd">Add a Tool</button>
-            <button class="btn ghost" id="btnAddPreset">Add: Clear & Reset</button>
-            <button class="btn danger" id="btnReset">Reset (Local)</button>
-          </div>
-          <div class="sub" style="margin-top:10px;font-size:13px">
-            Tip: All tools/notes are saved in <b>localStorage</b> (this device only).
-          </div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="content">
-        <h2 class="sectionTitle">Tools</h2>
-        <p class="hint">
-          You can add unlimited tool entries here. Later we can upgrade each tool into a full page/module.
-        </p>
-
-        <div class="grid" id="toolGrid"></div>
-
-        <p class="hint" style="margin-top:16px">
-          Icon path (English only): <b>assets/icons/icon-1024.png</b>
-          <br/>Reminder: GitHub Pages is case-sensitive (icons ≠ Icons).
-        </p>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brandMark">🕊️</div>
+      <div class="brandText">
+        <div class="brandTitle">Angel Collab Workshop</div>
+        <div class="brandSub">骨架版｜先做工具，再長成課程</div>
       </div>
     </div>
-  </div>
 
-  <div class="toast" id="toast">Copied.</div>
+    <div class="topActions">
+      <button class="btn ghost" id="btnInstall" hidden>安裝</button>
+      <button class="btn" id="btnAdd">新增工具</button>
+    </div>
+  </header>
 
-  <script>
-    const LS_KEY = "angel_collab_workshop_v1_tools";
+  <!-- LIST VIEW -->
+  <main class="wrap" id="viewList">
+    <section class="panel">
+      <div class="panelHead">
+        <h1>工具卡片</h1>
+        <p class="muted">點卡片進入工具頁。輸入會自動保存（本機）。</p>
+      </div>
 
-    const $grid = document.getElementById("toolGrid");
-    const $toast = document.getElementById("toast");
+      <div class="cards" id="cardList"></div>
 
-    function nowISO(){
-      const d = new Date();
-      return d.toISOString();
-    }
-    function formatTime(iso){
-      try{
-        const d = new Date(iso);
-        return d.toLocaleString();
-      }catch(e){
-        return iso;
-      }
-    }
-    function load(){
-      try{
-        const raw = localStorage.getItem(LS_KEY);
-        return raw ? JSON.parse(raw) : [];
-      }catch(e){
-        return [];
-      }
-    }
-    function save(list){
-      localStorage.setItem(LS_KEY, JSON.stringify(list));
-    }
-    function toast(msg="Done"){
-      $toast.textContent = msg;
-      $toast.classList.add("show");
-      setTimeout(()=> $toast.classList.remove("show"), 1200);
-    }
+      <div class="empty" id="emptyState" hidden>
+        <div class="emptyTitle">尚未新增工具</div>
+        <div class="emptySub">先放一張卡就好。工具會慢慢長。</div>
+        <button class="btn" id="btnAddFromEmpty">新增第一張</button>
+      </div>
+    </section>
+  </main>
 
-    function uid(){
-      return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
-    }
+  <!-- DETAIL VIEW -->
+  <main class="wrap" id="viewDetail" hidden>
+    <section class="panel">
+      <div class="detailTop">
+        <button class="btn ghost" id="btnBack">← 返回</button>
+        <div class="detailMeta">
+          <div class="detailTitle" id="detailTitle"></div>
+          <div class="detailPurpose" id="detailPurpose"></div>
+        </div>
+        <button class="btn danger" id="btnDelete">刪除</button>
+      </div>
 
-    function makePromptTemplate(toolTitle, toolNote){
-      return `You are my calm co-designer.
-Brand tone: steady, gentle, not preachy, vivid, practical.
+      <div class="detailBody">
+        <!-- Special (Inspiration Keeper) block -->
+        <div class="mantraBox" id="mantraBox" hidden>
+          <div class="mantraLine1">靈感，讓我清楚看見你</div>
+          <div class="mantraLine2">清楚或模糊，都是真實。</div>
+        </div>
 
-Tool name: ${toolTitle}
-My current situation:
-${toolNote || "(fill in one sentence)"}
+        <div class="field">
+          <div class="fieldLabel">此刻的片段（可留白）</div>
+          <div class="fieldHint">一句話 / 一個畫面 / 一個感覺。你不用整理，也不用完成。</div>
+          <textarea id="detailNote" placeholder="如果此刻有一個片段，可以先放在這裡…"></textarea>
+          <div class="saveHint" id="saveHint">會自動保存</div>
+        </div>
 
-Please help me:
-1) Clarify what this tool does in 1 line
-2) Give me 3 step-by-step actions I can do today (30 seconds / 2 minutes / 5 minutes)
-3) Write 3 gentle phrases I can say to myself (no preaching)
-4) Suggest 1 upgrade feature for this tool (simple, feasible)
-Output: structured bullets, bilingual labels are OK (English titles + short Chinese notes).`;
-    }
-
-    function render(){
-      const list = load();
-      if(!list.length){
-        $grid.innerHTML = `
-          <div class="tool" style="grid-column:1/-1">
-            <div class="hint" style="margin:0">
-              No tools yet. Tap <b>Add a Tool</b> or <b>Add: Clear & Reset</b>.
-            </div>
+        <div class="detailFooter">
+          <div class="tiny muted" id="detailUpdated"></div>
+          <div class="detailBtns">
+            <button class="btn ghost" id="btnEdit">編輯卡片</button>
+            <button class="btn ghost" id="btnCopyPrompt">複製 AI 咒語</button>
           </div>
-        `;
-        return;
-      }
+        </div>
+      </div>
+    </section>
+  </main>
 
-      $grid.innerHTML = list.map(t => {
-        const doneStyle = t.done ? "opacity:.7" : "";
-        const titleStyle = t.done ? "text-decoration:line-through; text-decoration-thickness:2px; text-decoration-color: rgba(120,255,180,.65);" : "";
-        return `
-          <div class="tool" data-id="${t.id}" style="${doneStyle}">
-            <div class="row">
-              <input class="check" type="checkbox" ${t.done ? "checked" : ""} data-act="toggle" />
-              <div style="flex:1">
-                <h3 style="${titleStyle}">${escapeHtml(t.title)}</h3>
-                <div class="meta">Updated: ${escapeHtml(formatTime(t.updatedAt))}</div>
-                ${t.note ? `<div class="note">${escapeHtml(t.note)}</div>` : `<div class="note" style="opacity:.65">No note yet.</div>`}
-                <div class="actions">
-                  <button class="pill ok" data-act="edit">Edit</button>
-                  <button class="pill warn" data-act="prompt">AI Prompt</button>
-                  <button class="pill danger" data-act="delete">Delete</button>
-                </div>
+  <!-- ADD / EDIT MODAL -->
+  <dialog class="modal" id="toolModal">
+    <form method="dialog" class="modalBox" id="toolForm">
+      <div class="modalHead">
+        <div class="modalTitle" id="modalTitle">新增工具</div>
+        <button class="btn ghost" value="cancel" type="submit">關閉</button>
+      </div>
 
-                <div class="promptBox" data-box="prompt">
-                  <div class="promptLabel">Copy this prompt into ChatGPT / your AI:</div>
-                  <textarea readonly>${escapeHtml(t.prompt || makePromptTemplate(t.title, t.note))}</textarea>
-                  <div class="actions">
-                    <button class="pill ok" data-act="copyPrompt">Copy Prompt</button>
-                    <button class="pill" data-act="closePrompt">Close</button>
-                  </div>
-                </div>
+      <div class="field">
+        <div class="fieldLabel">Tool Name</div>
+        <input id="inpName" class="input" placeholder="例如：Inspiration Keeper｜靈感守門人" required />
+      </div>
 
-              </div>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
+      <div class="field">
+        <div class="fieldLabel">One-line Purpose</div>
+        <input id="inpPurpose" class="input" placeholder="例如：為靈感留一個位置" />
+      </div>
 
-    function escapeHtml(str){
-      return String(str)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
+      <div class="field">
+        <div class="fieldLabel">Optional Link</div>
+        <input id="inpLink" class="input" placeholder="例如：https://你的工具頁（可空）" />
+      </div>
 
-    function addToolManual(){
-      const title = prompt("Tool title (English recommended):", "Tool");
-      if(!title) return;
-      const note = prompt("Short note (optional):", "");
-      const list = load();
-      list.unshift({
-        id: uid(),
-        title: title.trim(),
-        note: (note || "").trim(),
-        done: false,
-        prompt: "",
-        createdAt: nowISO(),
-        updatedAt: nowISO()
-      });
-      save(list);
-      render();
-      toast("Added");
-    }
+      <div class="modalActions">
+        <button class="btn ghost" value="cancel" type="submit">取消</button>
+        <button class="btn" id="btnSaveTool" value="ok" type="submit">儲存</button>
+      </div>
 
-    function addPresetClearReset(){
-      const list = load();
-      const title = "Clear & Reset";
-      const note =
-`When my mind feels full, I do a quick reset:
-1) Name it (one sentence)
-2) Breathe (30 seconds)
-3) Choose one next step (tiny)`;
+      <input type="hidden" id="inpId" />
+    </form>
+  </dialog>
 
-      list.unshift({
-        id: uid(),
-        title,
-        note,
-        done: false,
-        prompt: makePromptTemplate(title, note),
-        createdAt: nowISO(),
-        updatedAt: nowISO()
-      });
-      save(list);
-      render();
-      toast("Preset added");
-    }
+  <div class="toast" id="toast">已複製</div>
 
-    function resetAll(){
-      const ok = confirm("Reset local data? (This device only)\nThis cannot be undone.");
-      if(!ok) return;
-      localStorage.removeItem(LS_KEY);
-      render();
-      toast("Reset");
-    }
-
-    async function copyText(text){
-      try{
-        await navigator.clipboard.writeText(text);
-        toast("Copied");
-      }catch(e){
-        // fallback
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-        toast("Copied");
-      }
-    }
-
-    // Events
-    document.getElementById("btnAdd").addEventListener("click", addToolManual);
-    document.getElementById("btnAddPreset").addEventListener("click", addPresetClearReset);
-    document.getElementById("btnReset").addEventListener("click", resetAll);
-
-    $grid.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-act]");
-      if(!btn) return;
-
-      const act = btn.getAttribute("data-act");
-      const card = e.target.closest(".tool");
-      const id = card?.getAttribute("data-id");
-      if(!id) return;
-
-      const list = load();
-      const idx = list.findIndex(x => x.id === id);
-      if(idx < 0) return;
-
-      if(act === "delete"){
-        const ok = confirm("Delete this tool?");
-        if(!ok) return;
-        list.splice(idx,1);
-        save(list);
-        render();
-        toast("Deleted");
-        return;
-      }
-
-      if(act === "edit"){
-        const t = list[idx];
-        const title = prompt("Edit title:", t.title);
-        if(title === null) return;
-        const note = prompt("Edit note:", t.note || "");
-        if(note === null) return;
-
-        t.title = title.trim() || t.title;
-        t.note = (note || "").trim();
-        if(!t.prompt) t.prompt = makePromptTemplate(t.title, t.note);
-        t.updatedAt = nowISO();
-        save(list);
-        render();
-        toast("Updated");
-        return;
-      }
-
-      if(act === "prompt"){
-        const box = card.querySelector('[data-box="prompt"]');
-        box.classList.toggle("show");
-        return;
-      }
-
-      if(act === "closePrompt"){
-        const box = card.querySelector('[data-box="prompt"]');
-        box.classList.remove("show");
-        return;
-      }
-
-      if(act === "copyPrompt"){
-        const ta = card.querySelector("textarea");
-        const raw = ta?.value || "";
-        copyText(raw);
-        return;
-      }
-    });
-
-    $grid.addEventListener("change", (e) => {
-      const ck = e.target.closest('input[type="checkbox"][data-act="toggle"]');
-      if(!ck) return;
-      const card = e.target.closest(".tool");
-      const id = card?.getAttribute("data-id");
-      if(!id) return;
-
-      const list = load();
-      const t = list.find(x => x.id === id);
-      if(!t) return;
-
-      t.done = !!ck.checked;
-      t.updatedAt = nowISO();
-      save(list);
-      render();
-    });
-
-    // First render
-    render();
-
-    // Optional: auto add preset if empty
-    const initial = load();
-    if(!initial.length){
-      addPresetClearReset();
-    }
-
-    // Register service worker only if you add sw.js later
-    // (kept off for skeleton simplicity)
-  </script>
+  <script src="./app.js"></script>
 </body>
 </html>
