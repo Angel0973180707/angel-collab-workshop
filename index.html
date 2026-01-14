@@ -1,228 +1,111 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#f5f6f7" />
-
+  <meta name="theme-color" content="#0b1220" />
   <title>Angel Collab Workshop</title>
-  <meta name="description" content="A lightweight collaboration workshop hub for tools, notes, and prompts." />
 
-  <!-- PWA manifest -->
-  <link rel="manifest" href="./manifest.json?v=1" />
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./assets/icons/icon-1024.png" />
 
-  <!-- App Icon (iOS backup) -->
-  <link rel="apple-touch-icon" href="./assets/icons/icon-1024.png?v=1" />
-
-  <!-- Favicon (optional but helpful) -->
-  <link rel="icon" href="./assets/icons/icon-1024.png?v=1" />
-
-  <style>
-    :root{
-      --bg:#f5f6f7;
-      --card:#ffffff;
-      --text:#111;
-      --muted:#6b7280;
-      --line:#e7e7e7;
-      --shadow:0 10px 30px rgba(0,0,0,.06);
-      --radius:22px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", Arial, sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    .wrap{
-      max-width:720px;
-      margin:0 auto;
-      padding:22px 16px 40px;
-    }
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-    .hero{
-      padding:18px 18px 8px;
-      display:flex;
-      gap:14px;
-      align-items:center;
-    }
-    .appicon{
-      width:76px;
-      height:76px;
-      border-radius:18px;
-      border:1px solid var(--line);
-      background:#fff;
-      display:grid;
-      place-items:center;
-      overflow:hidden;
-      flex:0 0 auto;
-    }
-    .appicon img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-    h1{
-      margin:0;
-      font-size:26px;
-      letter-spacing:.5px;
-    }
-    .sub{
-      margin:6px 0 0;
-      color:var(--muted);
-      line-height:1.5;
-    }
-    .divider{
-      height:1px;
-      background:var(--line);
-      margin:12px 0 0;
-    }
-    .section{
-      padding:16px 18px 18px;
-      display:grid;
-      gap:12px;
-    }
-    .pill{
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px 14px;
-      background:#fff;
-    }
-    .pill h2{
-      margin:0 0 10px;
-      font-size:18px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-    .small{
-      color:var(--muted);
-      line-height:1.7;
-      font-size:14px;
-      margin:0;
-    }
-    .path{
-      margin-top:10px;
-      padding:12px 12px;
-      border:1px dashed #d7d7d7;
-      border-radius:14px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size:14px;
-      background:#fafafa;
-      word-break:break-all;
-    }
-    .btnrow{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
-    .btn{
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:14px;
-      padding:10px 12px;
-      font-size:14px;
-      cursor:pointer;
-    }
-    .btn:active{transform:translateY(1px)}
-    .toast{
-      position:fixed;
-      left:50%;
-      transform:translateX(-50%);
-      bottom:18px;
-      background:rgba(17,17,17,.92);
-      color:#fff;
-      padding:10px 12px;
-      border-radius:12px;
-      font-size:13px;
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .2s ease;
-    }
-    .toast.show{opacity:1}
-  </style>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
-  <main class="wrap">
-    <section class="card" aria-label="Angel Collab Workshop">
-      <div class="hero">
-        <div class="appicon" aria-hidden="true">
-          <img
-            src="./assets/icons/icon-1024.png?v=1"
-            alt=""
-            loading="eager"
-            onerror="this.onerror=null;this.src='./assets/icons/icon-1024.png?v=2';"
-          />
-        </div>
-        <div>
-          <h1>天使工作坊</h1>
-          <p class="sub">協作工坊母體｜先讓它能跑起來，再慢慢長成你要的樣子。</p>
-        </div>
+  <div class="app">
+    <header class="hero">
+      <div class="hero-left">
+        <img class="hero-icon" src="./assets/icons/icon-1024.png" alt="Angel Collab Workshop Icon" />
       </div>
 
-      <div class="divider"></div>
+      <div class="hero-right">
+        <h1>Angel Collab Workshop</h1>
+        <p class="subtitle">A calm workspace hub. Start simple, grow later.</p>
 
-      <div class="section">
-        <div class="pill">
-          <h2>✅ 你已完成：repo 結構 + icon + manifest</h2>
-          <p class="small">下一步：開啟 GitHub Pages，讓它上線。</p>
+        <div class="actions">
+          <button class="btn primary" id="btnAddTool" type="button">Add a Tool</button>
+          <button class="btn" id="btnReset" type="button" title="Clear local data on this device">Reset (Local)</button>
         </div>
 
-        <div class="pill">
-          <h2>📌 Icon Path (English only)</h2>
-          <div class="path">assets/icons/icon-1024.png</div>
-          <p class="small" style="margin-top:10px;">
-            提醒：GitHub Pages 對大小寫很敏感（icons ≠ Icons）。
-          </p>
-          <div class="btnrow">
-            <button class="btn" type="button" id="btnCopy">Copy path</button>
-            <button class="btn" type="button" id="btnOpen">Open icon</button>
-          </div>
-        </div>
-
-        <div class="pill">
-          <h2>🌿 下一步（骨架先放好）</h2>
-          <p class="small">
-            之後我們會把工坊做成：工具存放區、影音備註、表單入口（可選）、咒語包區。<br/>
-            先骨架，先能用；再一個一個長出工具。
-          </p>
-        </div>
+        <p class="hint">
+          Tip: All tools/notes are saved in <strong>localStorage</strong> (this device only).
+        </p>
       </div>
-    </section>
-  </main>
+    </header>
 
-  <div class="toast" id="toast">Copied</div>
+    <main class="main">
+      <section class="card">
+        <div class="card-head">
+          <h2>Tools</h2>
+          <p class="muted">You can add unlimited tool entries here. Later we can upgrade each tool into a full page/module.</p>
+        </div>
+
+        <div id="toolList" class="tool-list" aria-live="polite"></div>
+
+        <div class="empty" id="emptyState">
+          <div class="empty-title">No tools yet</div>
+          <div class="empty-text">Add your first tool. Keep it light. Keep it usable.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Workshop Notes</h2>
+          <p class="muted">A place to park ideas. No pressure.</p>
+        </div>
+
+        <textarea id="workshopNotes" class="textarea" rows="8" placeholder="Write anything here..."></textarea>
+        <div class="row">
+          <button class="btn primary" id="btnSaveNotes" type="button">Save Notes</button>
+          <span class="muted" id="notesStatus"></span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="muted">Angel Collab Workshop • Skeleton v1</span>
+    </footer>
+  </div>
+
+  <!-- Add Tool Dialog -->
+  <dialog class="dialog" id="dlgAddTool">
+    <form method="dialog" class="dialog-inner">
+      <div class="dialog-head">
+        <h3>Add a Tool</h3>
+        <button class="icon-btn" value="cancel" aria-label="Close">✕</button>
+      </div>
+
+      <label class="label">Tool Name</label>
+      <input class="input" id="toolName" type="text" maxlength="40" placeholder="e.g., Calm Reset" required />
+
+      <label class="label">One-line Purpose</label>
+      <input class="input" id="toolDesc" type="text" maxlength="80" placeholder="e.g., Clear the mind, return to steady." />
+
+      <label class="label">Optional Link</label>
+      <input class="input" id="toolLink" type="text" placeholder="e.g., tools/calm-reset/index.html" />
+
+      <div class="dialog-actions">
+        <button class="btn" value="cancel" type="button" id="btnCancel">Cancel</button>
+        <button class="btn primary" value="default" type="submit" id="btnCreate">Create</button>
+      </div>
+
+      <p class="muted small">
+        Link can be empty for now. You can add/modify later.
+      </p>
+    </form>
+  </dialog>
+
+  <script src="./app.js"></script>
 
   <script>
-    const toast = document.getElementById('toast');
-    const showToast = (msg) => {
-      toast.textContent = msg || 'Done';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 1100);
-    };
-
-    document.getElementById('btnCopy').addEventListener('click', async () => {
-      const text = 'assets/icons/icon-1024.png';
-      try{
-        await navigator.clipboard.writeText(text);
-        showToast('Copied');
-      }catch(e){
-        showToast('Copy failed');
-      }
-    });
-
-    document.getElementById('btnOpen').addEventListener('click', () => {
-      window.open('./assets/icons/icon-1024.png?v=1', '_blank');
-    });
+    // Register Service Worker
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
