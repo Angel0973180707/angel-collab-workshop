@@ -198,3 +198,28 @@ h1,h2,h3,h4,h5,h6,
   word-break: keep-all;
   line-break: strict;
 }
+/* --- CJK anti-weird-break patch (append only) --- */
+/* 1) Protect common titles inside cards/lists */
+.item strong,
+.item .meta strong,
+.meta strong,
+.card h2,
+.card h3,
+.card strong,
+.tool-title,
+.card-title,
+.list-title,
+.title{
+  word-break: keep-all;
+  line-break: strict;
+}
+
+/* 2) If any flex/grid container squeezes text, allow proper wrapping */
+.item,
+.item .meta,
+.meta,
+.card,
+.topbar,
+.brand{
+  min-width: 0;
+}
