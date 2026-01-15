@@ -223,3 +223,9 @@ h1,h2,h3,h4,h5,h6,
 .brand{
   min-width: 0;
 }
+/* 一行解決「新增工具」歪掉 */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
