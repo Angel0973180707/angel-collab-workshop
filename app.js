@@ -11,7 +11,29 @@ const LS_KEYS = {
   vault: "acw_vault_v1",
   ui: "acw_ui_v1"
 };
+// ---- Migration: try to recover tools from old keys (safe, one-time) ----
+(function migrateOldKeys(){
+  const tryKeys = [
+    "tools", "toolLibrary", "workshopTools", "angelTools",
+    "acw_tools", "acwTools", "acw_tools_v0", "acw_tools_v0_1"
+  ];
 
+  const hasNew = !!localStorage.getItem(LS_KEYS.tools);
+  if(hasNew) return;
+
+  for(const k of tryKeys){
+    const raw = localStorage.getItem(k);
+    if(!raw) continue;
+    try{
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length){
+        localStorage.setItem(LS_KEYS.tools, JSON.stringify(parsed));
+        console.log("[ACW] Migrated tools from", k, "->", LS_KEYS.tools);
+        break;
+      }
+    }catch(e){}
+  }
+})();
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
