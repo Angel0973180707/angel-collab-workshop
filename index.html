@@ -3,10 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
+  <meta name="theme-color" content="#0b1411" />
   <title>Angel Collab Workshop</title>
 
   <link rel="manifest" href="./manifest.json" />
@@ -19,107 +16,222 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <div class="brandMark">🕊️</div>
-      <div class="brandText">
-        <div class="brandTitle">Angel Collab Workshop</div>
-        <div class="brandSub">骨架版｜先做工具，再長成課程</div>
+      <div class="logo" aria-hidden="true">
+        <img src="./assets/icons/icon-192.png" alt="" />
+      </div>
+      <div class="txt">
+        <div class="title">Angel Collab Workshop</div>
+        <div class="sub">工具庫 × 主題組合 × 咒語輸出 × 成品連結倉庫</div>
       </div>
     </div>
-
-    <div class="topActions">
-      <button class="btn ghost" id="btnInstall" hidden>安裝</button>
-      <button class="btn" id="btnAdd">新增工具</button>
+    <div class="row">
+      <button id="btnAddTool" class="btn ghost" type="button">＋ 新增工具</button>
+      <button id="btnAddTheme" class="btn" type="button">＋ 新增主題</button>
     </div>
   </header>
 
-  <!-- LIST VIEW -->
-  <main class="wrap" id="viewList">
-    <section class="panel">
-      <div class="panelHead">
-        <h1>工具卡片</h1>
-        <p class="muted">點卡片進入工具頁。輸入會自動保存（本機）。</p>
-      </div>
+  <nav class="tabs" aria-label="Tabs">
+    <button class="tab active" data-tab="tools" type="button">工具庫</button>
+    <button class="tab" data-tab="themes" type="button">主題組合</button>
+    <button class="tab" data-tab="vault" type="button">成品連結倉庫</button>
+    <button class="tab" data-tab="help" type="button">使用說明</button>
+  </nav>
 
-      <div class="cards" id="cardList"></div>
+  <main class="wrap">
+    <!-- Tools -->
+    <section id="panel-tools" class="panel active">
+      <div class="card">
+        <div class="pill"><span class="dot"></span><strong>工具庫</strong><span class="badge" id="toolsCount">0</span></div>
+        <p class="hint">先把你會用到的工具卡放進來。每張卡可以是草稿，也可以是可用版。</p>
 
-      <div class="empty" id="emptyState" hidden>
-        <div class="emptyTitle">尚未新增工具</div>
-        <div class="emptySub">先放一張卡就好。工具會慢慢長。</div>
-        <button class="btn" id="btnAddFromEmpty">新增第一張</button>
+        <div class="row">
+          <input id="toolSearch" class="input" placeholder="搜尋工具（名稱/一句話用途/標籤）…" />
+          <button id="btnSeedTools" class="btn ghost" type="button">建立示範工具（可刪）</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <div id="toolsList" class="list" aria-live="polite"></div>
       </div>
     </section>
-  </main>
 
-  <!-- DETAIL VIEW -->
-  <main class="wrap" id="viewDetail" hidden>
-    <section class="panel">
-      <div class="detailTop">
-        <button class="btn ghost" id="btnBack">← 返回</button>
-        <div class="detailMeta">
-          <div class="detailTitle" id="detailTitle"></div>
-          <div class="detailPurpose" id="detailPurpose"></div>
-        </div>
-        <button class="btn danger" id="btnDelete">刪除</button>
-      </div>
+    <!-- Themes -->
+    <section id="panel-themes" class="panel">
+      <div class="twoCols">
+        <!-- Theme list -->
+        <div class="card">
+          <div class="pill"><span class="dot"></span><strong>主題清單</strong><span class="badge" id="themesCount">0</span></div>
+          <p class="hint">每個主題是一個「陪伴路徑」。先選卡片組合、試用順序，覺得順了再輸出咒語給 AI 協作。</p>
 
-      <div class="detailBody">
-        <!-- Special (Inspiration Keeper) block -->
-        <div class="mantraBox" id="mantraBox" hidden>
-          <div class="mantraLine1">靈感，讓我清楚看見你</div>
-          <div class="mantraLine2">清楚或模糊，都是真實。</div>
+          <div id="themesList" class="list" aria-live="polite"></div>
         </div>
 
-        <div class="field">
-          <div class="fieldLabel">此刻的片段（可留白）</div>
-          <div class="fieldHint">一句話 / 一個畫面 / 一個感覺。你不用整理，也不用完成。</div>
-          <textarea id="detailNote" placeholder="如果此刻有一個片段，可以先放在這裡…"></textarea>
-          <div class="saveHint" id="saveHint">會自動保存</div>
-        </div>
+        <!-- Theme editor -->
+        <div class="card">
+          <div class="pill"><span class="dot"></span><strong>主題編輯</strong><span class="badge" id="activeThemeBadge">未選主題</span></div>
 
-        <div class="detailFooter">
-          <div class="tiny muted" id="detailUpdated"></div>
-          <div class="detailBtns">
-            <button class="btn ghost" id="btnEdit">編輯卡片</button>
-            <button class="btn ghost" id="btnCopyPrompt">複製 AI 咒語</button>
+          <div id="themeEmpty" class="hint">先在左邊選一個主題，或按右上角「新增主題」。</div>
+
+          <div id="themeEditor" class="hidden">
+            <label class="lbl">主題名稱</label>
+            <input id="themeName" class="input" placeholder="例如：被指責時先穩 / 拖延不是懶" />
+
+            <label class="lbl">一句話目標（可選）</label>
+            <input id="themeGoal" class="input" placeholder="例如：先穩住再開口 / 先啟動再完成" />
+
+            <div class="sep"></div>
+
+            <div class="subcard">
+              <h3>① 選工具卡（勾選加入組合）</h3>
+              <p class="hint">工具很多也沒關係：你只是在選「今天要陪哪幾步」。</p>
+              <div id="pickToolsList" class="list"></div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="subcard">
+              <h3>② 已選組合（可調整順序）</h3>
+              <p class="hint">順序就是陪伴節奏。你可以慢慢改，直到「順」。</p>
+              <div id="sequenceList" class="list"></div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="subcard">
+              <h3>③ 試用（依序走一回）</h3>
+              <div class="previewBox">
+                <div class="previewTitle">試用視窗</div>
+                <div id="tryoutBox" class="status">尚未開始。請先在「已選組合」加入至少 1 張卡。</div>
+              </div>
+              <div class="row mini">
+                <button id="btnPrev" class="btn ghost" type="button">上一張</button>
+                <button id="btnNext" class="btn ghost" type="button">下一張</button>
+                <button id="btnStartTry" class="btn" type="button">開始試用</button>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="subcard">
+              <h3>④ 生成咒語（給 AI 協作）</h3>
+              <p class="hint">這裡只輸出「文字咒語」。成品 PWA 會去新的 repo 做，工房不會被覆蓋。</p>
+
+              <div class="row">
+                <button id="btnGenPrompt" class="btn" type="button">生成咒語</button>
+                <button id="btnCopyPrompt" class="btn ghost" type="button">一鍵複製</button>
+              </div>
+
+              <pre id="promptBox" class="code" aria-label="Prompt output"></pre>
+              <div id="promptStatus" class="status"></div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="subcard">
+              <h3>⑤ 存放成品網址（連結倉庫）</h3>
+              <p class="hint">你之後把獨立 PWA 發佈在新的 repo（GitHub Pages），把網址貼回來存放即可。</p>
+
+              <div class="grid2">
+                <div>
+                  <label class="lbl">成品名稱（預設用主題名）</label>
+                  <input id="vaultName" class="input" placeholder="例如：Angel | 90秒呼吸" />
+                </div>
+                <div>
+                  <label class="lbl">版本（可選）</label>
+                  <input id="vaultVer" class="input" placeholder="例如：v0.1" />
+                </div>
+              </div>
+              <label class="lbl">PWA 網址（GitHub Pages）</label>
+              <input id="vaultUrl" class="input" placeholder="https://username.github.io/repo-name/" />
+
+              <label class="lbl">備註（可選，多連結可貼在這裡）</label>
+              <textarea id="vaultNote" class="input" rows="3" placeholder="適用情境 / 課程段落 / 相關影片連結…"></textarea>
+
+              <div class="row mini">
+                <button id="btnSaveVault" class="btn" type="button">存到倉庫</button>
+              </div>
+              <div id="vaultSaveStatus" class="status"></div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="row">
+              <button id="btnDeleteTheme" class="btn danger" type="button">刪除此主題</button>
+              <button id="btnExportTheme" class="btn ghost" type="button">匯出主題 JSON</button>
+              <button id="btnImportTheme" class="btn ghost" type="button">匯入主題 JSON</button>
+              <input id="importThemeFile" type="file" accept="application/json" class="hidden" />
+            </div>
+
+            <div id="themeStatus" class="status"></div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Vault -->
+    <section id="panel-vault" class="panel">
+      <div class="card">
+        <div class="pill"><span class="dot"></span><strong>成品連結倉庫</strong><span class="badge" id="vaultCount">0</span></div>
+        <p class="hint">這裡只存網址與備註，不存程式碼。就算某個成品壞掉，也不會影響工房。</p>
+
+        <div class="row">
+          <input id="vaultSearch" class="input" placeholder="搜尋（名稱/版本/備註/網址）…" />
+          <button id="btnExportVault" class="btn ghost" type="button">匯出倉庫 JSON</button>
+          <button id="btnImportVault" class="btn ghost" type="button">匯入倉庫 JSON</button>
+          <input id="importVaultFile" type="file" accept="application/json" class="hidden" />
+        </div>
+
+        <div class="sep"></div>
+
+        <div id="vaultList" class="list"></div>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section id="panel-help" class="panel">
+      <div class="card">
+        <h2>使用說明（骨架版）</h2>
+        <p class="hint">
+          1) 先在「工具庫」新增工具卡（可以草稿）。<br/>
+          2) 到「主題組合」新增主題，勾選工具卡、調整順序、試用走一回。<br/>
+          3) 覺得順了，按「生成咒語」，把咒語貼給 AI 生成「獨立 PWA」。<br/>
+          4) 獨立 PWA 一律在「新的 repo」發佈，網址貼回來存到「成品連結倉庫」。<br/>
+          <br/>
+          ✅ 工房永遠不被成品覆蓋。<br/>
+          ✅ 你可以一直做草稿，直到某張卡成熟再獨立。<br/>
+        </p>
+      </div>
+    </section>
   </main>
 
-  <!-- ADD / EDIT MODAL -->
-  <dialog class="modal" id="toolModal">
-    <form method="dialog" class="modalBox" id="toolForm">
-      <div class="modalHead">
-        <div class="modalTitle" id="modalTitle">新增工具</div>
-        <button class="btn ghost" value="cancel" type="submit">關閉</button>
+  <footer class="footer">
+    <div class="small">Angel Collab Workshop • local-first • English paths only (assets/icons, assets/audio…)</div>
+  </footer>
+
+  <dialog id="toolDialog">
+    <form method="dialog" class="card">
+      <h3 id="toolDlgTitle">新增工具</h3>
+
+      <label class="lbl">工具名稱</label>
+      <input id="toolName" class="input" placeholder="例如：黃金90秒呼吸" required />
+
+      <label class="lbl">一句話用途</label>
+      <input id="toolOneLiner" class="input" placeholder="例如：情緒升高時，陪你撐過系統切換的90秒" />
+
+      <label class="lbl">陪語 / 內容（可多行）</label>
+      <textarea id="toolBody" class="input" rows="6" placeholder="把你要放在卡片上的文字先放進來（可草稿）。"></textarea>
+
+      <label class="lbl">標籤（用逗號分隔，可選）</label>
+      <input id="toolTags" class="input" placeholder="例如：呼吸, 情緒, 陪伴" />
+
+      <div class="row mini">
+        <button class="btn" id="toolSaveBtn" value="ok">儲存</button>
+        <button class="btn ghost" value="cancel">取消</button>
       </div>
 
-      <div class="field">
-        <div class="fieldLabel">Tool Name</div>
-        <input id="inpName" class="input" placeholder="例如：Inspiration Keeper(靈感守門人)" required />
-      </div>
-
-      <div class="field">
-        <div class="fieldLabel">One-line Purpose</div>
-        <input id="inpPurpose" class="input" placeholder="例如：為靈感留一個位置" />
-      </div>
-
-      <div class="field">
-        <div class="fieldLabel">Optional Link</div>
-        <input id="inpLink" class="input" placeholder="例如：https://你的工具頁（可空）" />
-      </div>
-
-      <div class="modalActions">
-        <button class="btn ghost" value="cancel" type="submit">取消</button>
-        <button class="btn" id="btnSaveTool" value="ok" type="submit">儲存</button>
-      </div>
-
-      <input type="hidden" id="inpId" />
+      <div id="toolDlgStatus" class="status"></div>
     </form>
   </dialog>
-
-  <div class="toast" id="toast">已複製</div>
 
   <script src="./app.js"></script>
 </body>
