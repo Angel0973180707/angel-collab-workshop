@@ -181,3 +181,20 @@ textarea{min-height: 170px; resize: vertical; line-height:1.55}
   transition: opacity .18s ease, transform .18s ease;
 }
 .toast.show{opacity:1; transform: translateX(-50%) translateY(-4px)}
+/* --- Chinese line-breaking fix (append only) --- */
+html { -webkit-text-size-adjust: 100%; }
+body{
+  word-break: normal;
+  overflow-wrap: anywhere;  /* URLs/English still wrap */
+  line-break: strict;       /* better CJK break rules */
+}
+
+/* Headings / buttons: avoid single-character breaks */
+h1,h2,h3,h4,h5,h6,
+.title,
+.tab,
+.btn,
+.pill strong{
+  word-break: keep-all;
+  line-break: strict;
+}
