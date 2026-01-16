@@ -16,7 +16,6 @@
 <body>
   <header class="topbar">
     <div class="brand">
-   
       <div class="txt">
         <div class="title">Angel Collab Workshop</div>
         <div class="sub">骨架版｜先做工具，再長成課程</div>
@@ -35,6 +34,7 @@
     <button class="tab active" data-tab="tools" type="button">工具庫</button>
     <button class="tab" data-tab="themes" type="button">主題組合</button>
     <button class="tab" data-tab="vault" type="button">成品連結倉庫</button>
+    <button class="tab" data-tab="prompt" type="button">AI 協作咒語</button>
     <button class="tab" data-tab="guide" type="button">使用說明</button>
   </nav>
 
@@ -69,7 +69,7 @@
         <div class="panelHeader">
           <div class="panelTitle">
             <h2>主題組合 <span class="badge" id="themesCount">0</span></h2>
-            <p class="hint">把工具排成一條「可走的路」。例如：暫停 → 90秒呼吸 → 代碼審查 → 新路一句話。</p>
+            <p class="hint">把工具排成一條「可走的路」。你也可以直接用「複製協作咒語」把組合帶去請 AI 產生獨立 PWA。</p>
           </div>
 
           <div class="panelSearch">
@@ -110,6 +110,45 @@
       </div>
     </section>
 
+    <!-- PROMPT -->
+    <section class="panel" id="panel-prompt">
+      <div class="card">
+        <div class="panelHeader">
+          <div class="panelTitle">
+            <h2>AI 協作咒語</h2>
+            <p class="hint">
+              這裡是「內建模板」。你可以先選一個主題（在主題列表按「複製協作咒語」），或在下方手動選主題，再一鍵複製完整咒語。
+            </p>
+          </div>
+
+          <div class="panelSearch">
+            <select class="input select" id="promptThemePick" aria-label="選擇主題"></select>
+            <button class="btn" id="btnCopyPrompt" type="button">複製協作咒語（含工具內容）</button>
+            <button class="btn ghost" id="btnPreviewPrompt" type="button">預覽</button>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="subcard">
+          <h3>模板（可改、會自動保存）</h3>
+          <p class="hint">你改完模板後，按「預覽」或「複製」就會用新模板生成。</p>
+          <textarea class="input textarea promptArea" id="promptTemplate" rows="16" placeholder="在這裡貼你的咒語模板…"></textarea>
+
+          <div class="panelSearch" style="margin-top:10px;">
+            <button class="btn ghost" id="btnResetPrompt" type="button">還原內建模板</button>
+            <button class="btn ghost" id="btnSavePrompt" type="button">儲存模板</button>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <h3>預覽（生成結果）</h3>
+          <p class="hint">這裡會把「主題＋流程工具內容」灌進模板，讓你確認無誤。</p>
+          <textarea class="input textarea promptArea" id="promptPreview" rows="16" readonly></textarea>
+        </div>
+      </div>
+    </section>
+
     <!-- GUIDE -->
     <section class="panel" id="panel-guide">
       <div class="card">
@@ -138,14 +177,15 @@
         <div class="subcard">
           <h3>3｜主題組合（把工具排成路）</h3>
           <p class="hint">
-            主題會記住工具順序。你可以把它當成「課程的一段流程」。
+            主題會記住工具順序。你也可以到「AI 協作咒語」頁，直接生成一份給 AI 的「獨立 PWA 製作指令」。
           </p>
         </div>
 
         <div class="subcard">
           <h3>4｜PWA 安裝後不更新怎麼辦？</h3>
           <p class="hint">
-            若你「已安裝到桌面」但更新不動：先把 PWA 解除安裝，再重新安裝一次（這是最簡單、最穩的做法）。
+            若你「已安裝到桌面」但更新不動：先把 PWA 解除安裝，再重新安裝一次（最簡單、最穩）。<br/>
+            或在瀏覽器開啟後，做一次「重新整理」。
           </p>
         </div>
       </div>
@@ -166,7 +206,7 @@
       <div class="grid2">
         <div>
           <label class="lbl">工具名稱</label>
-          <input class="input" id="tool_name" placeholder="例如：暫停｜0.5 秒斷點" />
+          <input class="input" id="tool_name" placeholder="例如：斷點停火｜暫停" />
         </div>
         <div>
           <label class="lbl">狀態</label>
@@ -178,7 +218,7 @@
       </div>
 
       <label class="lbl">一句話用途</label>
-      <input class="input" id="tool_one" placeholder="例如：在自動化反應全速運轉前，切回系統管理員模式。" />
+      <input class="input" id="tool_one" placeholder="例如：在自動反應全速運轉前，切回管理員模式。" />
 
       <label class="lbl">陪語／內容（可多行）</label>
       <textarea class="input textarea" id="tool_content" rows="7" placeholder="貼你的陪語、步驟、引導句…"></textarea>
@@ -218,10 +258,10 @@
       </div>
 
       <label class="lbl">主題標題</label>
-      <input class="input" id="theme_title" placeholder="例如：暫停系統｜先斷點，再改寫" />
+      <input class="input" id="theme_title" placeholder="例如：改變｜建立新反應" />
 
-      <label class="lbl">主題描述</label>
-      <textarea class="input textarea" id="theme_desc" rows="4" placeholder="一句話說明這個主題要帶人走什麼路"></textarea>
+      <label class="lbl">主題描述（副標）</label>
+      <textarea class="input textarea" id="theme_desc" rows="4" placeholder="例如：當自動反應啟動時，給自己一條新的路。"></textarea>
 
       <div class="sep"></div>
 
@@ -235,14 +275,14 @@
 
         <div class="subcard">
           <h3>主題流程（順序很重要）</h3>
-          <p class="hint">你可以拖曳排序（手機長按），或用上下移動。</p>
+          <p class="hint">你可以用↑↓排序。</p>
           <div class="list" id="themeFlowList"></div>
           <div class="empty small" id="themeFlowEmpty">尚未加入任何工具。</div>
 
           <div class="sep"></div>
 
           <label class="lbl">標籤（可選）</label>
-          <input class="input" id="theme_tags" placeholder="#情緒 #暫停 #重寫程式" />
+          <input class="input" id="theme_tags" placeholder="#改變 #暫停 #新反應" />
 
           <label class="lbl">AI 協作提示（預留）</label>
           <input class="input" id="theme_ai" placeholder="（可先留白）例如：生成一份『組合練習』與獨立PWA規格" />
@@ -253,6 +293,7 @@
         <button class="btn danger" id="themeDelete" type="button">刪除</button>
         <div class="modalRight">
           <button class="btn ghost" id="themeCopy" type="button">複製組合內容</button>
+          <button class="btn ghost" id="themeCopyPrompt" type="button">複製協作咒語（含工具內容）</button>
           <button class="btn" id="themeSave" type="button">儲存</button>
         </div>
       </div>
@@ -273,7 +314,7 @@
       </div>
 
       <label class="lbl">名稱</label>
-      <input class="input" id="vault_title" placeholder="例如：暫停｜0.5秒斷點（獨立PWA）" />
+      <input class="input" id="vault_title" placeholder="例如：改變｜建立新反應（獨立PWA）" />
 
       <label class="lbl">網址</label>
       <input class="input" id="vault_url" placeholder="https://yourname.github.io/xxx/" />
