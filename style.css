@@ -3,11 +3,11 @@
   --card:rgba(9,20,17,.72);
   --card2:rgba(255,255,255,.06);
   --stroke:rgba(255,255,255,.10);
-  --stroke2:rgba(255,255,255,.14);
+  --stroke2:rgba(255,255,255,.16);
 
-  --text:rgba(255,255,255,.92);
-  --muted:rgba(255,255,255,.70);
-  --hint:rgba(255,255,255,.62);
+  --text:rgba(255,255,255,.94);
+  --muted:rgba(255,255,255,.84);   /* ⬅ 提亮 */
+  --hint:rgba(255,255,255,.78);    /* ⬅ 提亮 */
 
   --brand:#2f6f55;
   --brand2:#3b8a67;
@@ -19,7 +19,7 @@
   /* INPUT */
   --inputBg:#ffffff;
   --inputText:#0b1411;
-  --inputPh:rgba(11,20,17,.45); /* placeholder */
+  --inputPh:rgba(11,20,17,.55);
   --inputStroke:rgba(11,20,17,.18);
 
   --btnText:#ffffff;
@@ -41,6 +41,7 @@ a{color:inherit}
 .wrap{max-width:980px;margin:0 auto;padding:16px}
 .sep{height:1px;background:var(--stroke);margin:14px 0}
 
+/* Topbar */
 .topbar{
   position:sticky;top:0;z-index:5;
   display:flex;gap:14px;align-items:flex-start;justify-content:space-between;
@@ -50,12 +51,12 @@ a{color:inherit}
   border-bottom:1px solid var(--stroke);
 }
 .brand{display:flex;gap:12px;align-items:center}
+
 .txt .title{
-  font-weight:800;
+  font-weight:900;
   letter-spacing:.2px;
   font-size:20px;
   line-height:1.15;
-  /* 避免你那個「英文斷字很醜」 */
   word-break:keep-all;
   overflow-wrap:normal;
 }
@@ -72,13 +73,15 @@ a{color:inherit}
   justify-content:flex-end;
   align-items:center;
 }
+
+/* Buttons */
 .btn{
   appearance:none;border:1px solid transparent;
   background:var(--brand);
   color:var(--btnText);
   padding:10px 14px;
   border-radius:999px;
-  font-weight:700;
+  font-weight:800;
   box-shadow: 0 8px 18px rgba(0,0,0,.22);
   cursor:pointer;
 }
@@ -89,18 +92,15 @@ a{color:inherit}
   box-shadow:none;
   color:var(--text);
 }
-.btn.ghost:hover{
-  background:rgba(255,255,255,.06);
-}
+.btn.ghost:hover{background:rgba(255,255,255,.06)}
 .btn.danger{
   background:transparent;
-  border-color:rgba(139,58,58,.55);
-  color:#ffcccc;
+  border-color:rgba(139,58,58,.60);
+  color:#ffd1d1;
 }
-.btn.danger:hover{
-  background:rgba(139,58,58,.18);
-}
+.btn.danger:hover{background:rgba(139,58,58,.20)}
 
+/* Tabs */
 .tabs{
   max-width:980px;margin:0 auto;
   display:flex;gap:10px;flex-wrap:wrap;
@@ -112,14 +112,15 @@ a{color:inherit}
   color:var(--text);
   padding:10px 14px;
   border-radius:999px;
-  font-weight:800;
+  font-weight:900;
   cursor:pointer;
 }
 .tab.active{
   background:rgba(47,111,85,.30);
-  border-color:rgba(47,111,85,.55);
+  border-color:rgba(47,111,85,.60);
 }
 
+/* Cards */
 .card{
   background:var(--card);
   border:1px solid var(--stroke);
@@ -128,13 +129,14 @@ a{color:inherit}
   padding:16px;
 }
 .subcard{
-  background:rgba(255,255,255,.05);
+  background:rgba(255,255,255,.06);
   border:1px solid var(--stroke);
   border-radius:16px;
   padding:14px;
   margin:12px 0;
 }
 
+/* Panels */
 .panel{display:none}
 .panel.active{display:block}
 
@@ -143,7 +145,7 @@ a{color:inherit}
   flex-wrap:wrap;
 }
 .panelTitle h2{margin:0;font-size:22px}
-.hint{margin:6px 0 0;color:var(--hint);line-height:1.6}
+.hint{margin:6px 0 0;color:var(--hint);line-height:1.7}
 .badge{
   display:inline-flex;align-items:center;justify-content:center;
   min-width:30px;height:26px;
@@ -159,6 +161,7 @@ a{color:inherit}
   justify-content:flex-end;
 }
 
+/* Inputs */
 .input{
   width:100%;
   border-radius:14px;
@@ -170,10 +173,17 @@ a{color:inherit}
   outline:none;
 }
 .input::placeholder{color:var(--inputPh)}
-.textarea{resize:vertical;line-height:1.6}
+.textarea{resize:vertical;line-height:1.7}
+.select{max-width:320px}
+.promptArea{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size:13px;
+}
 
-.lbl{display:block;margin:12px 0 6px;color:var(--muted);font-weight:800;font-size:13px}
+/* Labels */
+.lbl{display:block;margin:12px 0 6px;color:var(--muted);font-weight:900;font-size:13px}
 
+/* List Items */
 .list{display:flex;flex-direction:column;gap:12px}
 .item{
   background:rgba(255,255,255,.06);
@@ -184,31 +194,35 @@ a{color:inherit}
 .itemTop{
   display:flex;gap:10px;align-items:flex-start;justify-content:space-between;
 }
-.itemTitle{font-weight:900;font-size:18px;margin:0}
-.itemOne{color:var(--hint);margin-top:6px;line-height:1.5}
-.itemTags{color:rgba(255,255,255,.60);margin-top:8px;font-size:13px;line-height:1.4}
+.itemTitle{font-weight:950;font-size:18px;margin:0}
+.itemOne{color:var(--hint);margin-top:6px;line-height:1.6}
+.itemTags{color:rgba(255,255,255,.74);margin-top:8px;font-size:13px;line-height:1.5}
 .itemBtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+
 .empty{
   margin-top:12px;
   padding:14px;
   border-radius:16px;
-  border:1px dashed rgba(255,255,255,.16);
-  color:rgba(255,255,255,.62);
+  border:1px dashed rgba(255,255,255,.18);
+  color:rgba(255,255,255,.78);
 }
 .empty.small{font-size:13px;padding:12px}
 
+/* Layout */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .twoCols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:820px){
   .grid2,.twoCols{grid-template-columns:1fr}
+  .select{max-width:none}
 }
 
+/* Modal */
 .modal::backdrop{background:rgba(0,0,0,.55)}
 .modal{border:none;background:transparent;padding:0}
 .modalCard{
   width:min(880px,92vw);
-  background:rgba(255,255,255,.10);
-  border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.18);
   border-radius:22px;
   padding:14px;
   box-shadow:var(--shadow);
@@ -218,17 +232,18 @@ a{color:inherit}
   display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
   padding:6px 4px 10px;
 }
-.modalTitle{font-weight:900;font-size:18px}
-.modalSub{color:rgba(255,255,255,.66);font-size:13px;margin-top:4px;line-height:1.5}
+.modalTitle{font-weight:950;font-size:18px}
+.modalSub{color:rgba(255,255,255,.78);font-size:13px;margin-top:4px;line-height:1.6}
 .modalFooter{
   margin-top:14px;
   display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;
 }
 .modalRight{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 
+/* Footer */
 .footer{
   max-width:980px;margin:0 auto;
   padding:16px;
-  color:rgba(255,255,255,.55);
+  color:rgba(255,255,255,.72);
 }
 .small{font-size:12px}
