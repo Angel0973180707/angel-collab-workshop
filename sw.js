@@ -1,5 +1,5 @@
 /* Angel Collab Workshop - sw.js (full overwrite) */
-const CACHE_NAME = "acw-cache-v9"; // ← 每次大更新就 +1
+const CACHE_NAME = "acw-cache-v10"; // ← 這次更新：v10
 
 const CORE_ASSETS = [
   "./",
@@ -32,7 +32,6 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // only handle same-origin
   if (url.origin !== location.origin) return;
 
   const isHTML = req.headers.get("accept")?.includes("text/html");
