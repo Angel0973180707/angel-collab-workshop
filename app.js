@@ -1,39 +1,12 @@
-/* Angel Collab Workshop - Combo Skeleton (local-first)
-   - Tools library
-   - Theme combiner (pick + order + tryout)
-   - Generate AI prompt (text only)
-   - Vault to store published PWA URLs (metadata only)
-*/
+/* Angel Collab Workshop — skeleton v1 (data safety + readable editor + full frame) */
 
 const LS_KEYS = {
   tools: "acw_tools_v1",
   themes: "acw_themes_v1",
   vault: "acw_vault_v1",
-  ui: "acw_ui_v1"
+  ui: "acw_ui_v1",
 };
-// ---- Migration: try to recover tools from old keys (safe, one-time) ----
-(function migrateOldKeys(){
-  const tryKeys = [
-    "tools", "toolLibrary", "workshopTools", "angelTools",
-    "acw_tools", "acwTools", "acw_tools_v0", "acw_tools_v0_1"
-  ];
 
-  const hasNew = !!localStorage.getItem(LS_KEYS.tools);
-  if(hasNew) return;
-
-  for(const k of tryKeys){
-    const raw = localStorage.getItem(k);
-    if(!raw) continue;
-    try{
-      const parsed = JSON.parse(raw);
-      if(Array.isArray(parsed) && parsed.length){
-        localStorage.setItem(LS_KEYS.tools, JSON.stringify(parsed));
-        console.log("[ACW] Migrated tools from", k, "->", LS_KEYS.tools);
-        break;
-      }
-    }catch(e){}
-  }
-})();
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
@@ -47,792 +20,836 @@ function loadJSON(key, fallback){
     if(!raw) return fallback;
     return JSON.parse(raw);
   }catch(e){
+    console.warn("loadJSON failed:", key, e);
     return fallback;
   }
 }
-
-function saveJSON(key, data){
-  localStorage.setItem(key, JSON.stringify(data));
+function saveJSON(key, value){
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
-function escapeHTML(s=""){
-  return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+function normalizeTags(input){
+  const s = (input || "").trim();
+  if(!s) return [];
+  // allow: "#a #b" or "a b"
+  return s
+    .replace(/#/g, " ")
+    .split(/\s+/)
+    .map(t => t.trim())
+    .filter(Boolean)
+    .map(t => `#${t.replace(/^#/, "")}`);
+}
+function tagsToText(tags){
+  return (tags || []).join(" ");
 }
 
 function nowISO(){
   return new Date().toISOString();
 }
 
-/* ------------------ State ------------------ */
+function downloadJSON(filename, obj){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function copyText(text){
+  if(!text) text = "";
+  if(navigator.clipboard?.writeText){
+    return navigator.clipboard.writeText(text).catch(() => legacyCopy(text));
+  }
+  return legacyCopy(text);
+}
+function legacyCopy(text){
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  ta.remove();
+  return Promise.resolve();
+}
+
+/* ---------- State ---------- */
+
 let state = {
   tools: loadJSON(LS_KEYS.tools, []),
   themes: loadJSON(LS_KEYS.themes, []),
   vault: loadJSON(LS_KEYS.vault, []),
-  ui: loadJSON(LS_KEYS.ui, {
-    activeTab: "tools",
-    activeThemeId: null,
-    tryoutIndexByTheme: {}
-  })
+  ui: loadJSON(LS_KEYS.ui, { activeTab: "tools" }),
 };
 
-function persist(){
+/* ---------- Tabs ---------- */
+
+function setActiveTab(tab){
+  state.ui.activeTab = tab;
+  saveJSON(LS_KEYS.ui, state.ui);
+
+  $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  $$(".panel").forEach(p => p.classList.remove("active"));
+
+  const panelId = `#panel-${tab}`;
+  const panel = $(panelId);
+  if(panel) panel.classList.add("active");
+
+  // render on switch for safety
+  renderAll();
+}
+
+$$(".tab").forEach(btn => {
+  btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
+});
+
+/* ---------- Render ---------- */
+
+function renderAll(){
+  renderTools();
+  renderThemes();
+  renderVault();
+}
+
+function toolMatches(t, q){
+  if(!q) return true;
+  const hay = [
+    t.name, t.one, t.content,
+    (t.tags||[]).join(" "),
+    t.status
+  ].join(" ").toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function renderTools(){
+  const list = $("#toolsList");
+  const empty = $("#toolsEmpty");
+  const q = ($("#toolsSearch").value || "").trim();
+
+  const filtered = state.tools.filter(t => toolMatches(t, q));
+  $("#toolsCount").textContent = String(filtered.length);
+
+  list.innerHTML = "";
+  if(filtered.length === 0){
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  filtered
+    .sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""))
+    .forEach(t => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.innerHTML = `
+        <div class="meta">
+          <strong>${escapeHTML(t.name || "（未命名工具）")}</strong>
+          <div class="one">${escapeHTML(t.one || "")}</div>
+          <div class="tags">
+            <span>${escapeHTML((t.status==="ready") ? "可用" : "草稿")}</span>
+            <span> · </span>
+            <span>${escapeHTML(tagsToText(t.tags||[]))}</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" data-act="edit">編輯</button>
+          <button class="btn ghost" data-act="copy">複製卡片內容</button>
+          <button class="btn ghost" data-act="duplicate">複製成新工具</button>
+          <button class="btn danger" data-act="delete">刪除</button>
+        </div>
+      `;
+      el.querySelector('[data-act="edit"]').addEventListener("click", ()=> openToolModal(t.id));
+      el.querySelector('[data-act="copy"]').addEventListener("click", ()=> copyToolCard(t));
+      el.querySelector('[data-act="duplicate"]').addEventListener("click", ()=> duplicateTool(t.id));
+      el.querySelector('[data-act="delete"]').addEventListener("click", ()=> deleteTool(t.id));
+      list.appendChild(el);
+    });
+}
+
+function themeMatches(th, q){
+  if(!q) return true;
+  const hay = [
+    th.title, th.desc,
+    (th.tags||[]).join(" "),
+    (th.toolIds||[]).join(" "),
+  ].join(" ").toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function renderThemes(){
+  const list = $("#themesList");
+  const empty = $("#themesEmpty");
+  const q = ($("#themesSearch").value || "").trim();
+
+  const filtered = state.themes.filter(th => themeMatches(th, q));
+  $("#themesCount").textContent = String(filtered.length);
+
+  list.innerHTML = "";
+  if(filtered.length === 0){
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  filtered
+    .sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""))
+    .forEach(th => {
+      const toolNames = (th.toolIds||[])
+        .map(id => state.tools.find(t=>t.id===id)?.name || "（已刪除工具）");
+
+      const el = document.createElement("div");
+      el.className = "item";
+      el.innerHTML = `
+        <div class="meta">
+          <strong>${escapeHTML(th.title || "（未命名主題）")}</strong>
+          <div class="one">${escapeHTML(th.desc || "")}</div>
+          <div class="tags">
+            <span>${escapeHTML(tagsToText(th.tags||[]))}</span>
+          </div>
+          <div class="one small">${escapeHTML(toolNames.join(" → "))}</div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" data-act="edit">編輯</button>
+          <button class="btn ghost" data-act="copy">複製組合內容</button>
+          <button class="btn danger" data-act="delete">刪除</button>
+        </div>
+      `;
+      el.querySelector('[data-act="edit"]').addEventListener("click", ()=> openThemeModal(th.id));
+      el.querySelector('[data-act="copy"]').addEventListener("click", ()=> copyThemeCard(th));
+      el.querySelector('[data-act="delete"]').addEventListener("click", ()=> deleteTheme(th.id));
+      list.appendChild(el);
+    });
+}
+
+function renderVault(){
+  const list = $("#vaultList");
+  const empty = $("#vaultEmpty");
+
+  $("#vaultCount").textContent = String(state.vault.length);
+
+  list.innerHTML = "";
+  if(state.vault.length === 0){
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  state.vault
+    .slice()
+    .sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""))
+    .forEach(v => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.innerHTML = `
+        <div class="meta">
+          <strong>${escapeHTML(v.title || "（未命名連結）")}</strong>
+          <div class="one small">${escapeHTML(v.url || "")}</div>
+          <div class="tags small">${escapeHTML(v.note || "")}</div>
+        </div>
+        <div class="actions">
+          <a class="btn ghost" href="${escapeAttr(v.url||"#")}" target="_blank" rel="noreferrer">開啟</a>
+          <button class="btn ghost" data-act="edit">編輯</button>
+          <button class="btn danger" data-act="delete">刪除</button>
+        </div>
+      `;
+      el.querySelector('[data-act="edit"]').addEventListener("click", ()=> openVaultModal(v.id));
+      el.querySelector('[data-act="delete"]').addEventListener("click", ()=> deleteVault(v.id));
+      list.appendChild(el);
+    });
+}
+
+/* ---------- Tools CRUD ---------- */
+
+function persistTools(){
+  saveJSON(LS_KEYS.tools, state.tools);
+}
+
+function upsertTool(tool){
+  const idx = state.tools.findIndex(t=>t.id===tool.id);
+  if(idx >= 0) state.tools[idx] = tool;
+  else state.tools.unshift(tool);
+  persistTools();
+  renderAll();
+}
+
+function deleteTool(id){
+  const t = state.tools.find(x=>x.id===id);
+  if(!t) return;
+  if(!confirm(`確定刪除工具：「${t.name||"未命名"}」？`)) return;
+
+  state.tools = state.tools.filter(x=>x.id!==id);
+  // also remove from themes flows
+  state.themes = state.themes.map(th => ({
+    ...th,
+    toolIds: (th.toolIds||[]).filter(tid => tid !== id),
+    updatedAt: nowISO()
+  }));
+  persistTools();
+  saveJSON(LS_KEYS.themes, state.themes);
+  renderAll();
+}
+
+function duplicateTool(id){
+  const src = state.tools.find(x=>x.id===id);
+  if(!src) return;
+  const copy = {
+    ...src,
+    id: uid("tool"),
+    name: `${src.name || "工具"}（複製）`,
+    createdAt: nowISO(),
+    updatedAt: nowISO()
+  };
+  state.tools.unshift(copy);
+  persistTools();
+  renderAll();
+}
+
+function copyToolCard(t){
+  const text = [
+    `【工具名稱】${t.name||""}`,
+    `【一句話用途】${t.one||""}`,
+    `【陪語/內容】`,
+    `${t.content||""}`,
+    `【標籤】${tagsToText(t.tags||[])}`,
+    `【狀態】${t.status==="ready"?"可用":"草稿"}`,
+    t.aiPrompt ? `【AI協作提示】${t.aiPrompt}` : ""
+  ].filter(Boolean).join("\n");
+  copyText(text).then(()=> alert("已複製（可貼到備忘錄/Notion/訊息）"));
+}
+
+/* ---------- Themes CRUD ---------- */
+
+function persistThemes(){
+  saveJSON(LS_KEYS.themes, state.themes);
+}
+
+function upsertTheme(th){
+  const idx = state.themes.findIndex(x=>x.id===th.id);
+  if(idx >= 0) state.themes[idx] = th;
+  else state.themes.unshift(th);
+  persistThemes();
+  renderAll();
+}
+
+function deleteTheme(id){
+  const th = state.themes.find(x=>x.id===id);
+  if(!th) return;
+  if(!confirm(`確定刪除主題：「${th.title||"未命名"}」？`)) return;
+  state.themes = state.themes.filter(x=>x.id!==id);
+  persistThemes();
+  renderAll();
+}
+
+function copyThemeCard(th){
+  const toolLines = (th.toolIds||[]).map((id, i) => {
+    const t = state.tools.find(x=>x.id===id);
+    if(!t) return `${i+1}. （已刪除工具）`;
+    return `${i+1}. ${t.name || ""}｜${t.one || ""}`;
+  });
+
+  const text = [
+    `【主題】${th.title||""}`,
+    `【描述】${th.desc||""}`,
+    `【流程】`,
+    toolLines.join("\n"),
+    `【標籤】${tagsToText(th.tags||[])}`,
+    th.aiPrompt ? `【AI協作提示】${th.aiPrompt}` : ""
+  ].filter(Boolean).join("\n");
+
+  copyText(text).then(()=> alert("已複製（可貼給 AI 或做課程講義）"));
+}
+
+/* ---------- Vault CRUD ---------- */
+
+function persistVault(){
+  saveJSON(LS_KEYS.vault, state.vault);
+}
+
+function upsertVault(v){
+  const idx = state.vault.findIndex(x=>x.id===v.id);
+  if(idx >= 0) state.vault[idx] = v;
+  else state.vault.unshift(v);
+  persistVault();
+  renderAll();
+}
+
+function deleteVault(id){
+  const v = state.vault.find(x=>x.id===id);
+  if(!v) return;
+  if(!confirm(`確定刪除連結：「${v.title||"未命名"}」？`)) return;
+  state.vault = state.vault.filter(x=>x.id!==id);
+  persistVault();
+  renderAll();
+}
+
+/* ---------- Export / Import ---------- */
+
+function exportAll(){
+  const payload = {
+    schema: "acw_backup_v1",
+    exportedAt: nowISO(),
+    data: {
+      tools: state.tools,
+      themes: state.themes,
+      vault: state.vault,
+      ui: state.ui,
+    }
+  };
+  const filename = `acw-backup-${new Date().toISOString().slice(0,10)}.json`;
+  downloadJSON(filename, payload);
+}
+
+async function importAllFromFile(file){
+  const text = await file.text();
+  let payload;
+  try{
+    payload = JSON.parse(text);
+  }catch(e){
+    alert("匯入失敗：不是合法 JSON 檔");
+    return;
+  }
+  if(!payload?.data){
+    alert("匯入失敗：檔案格式不符");
+    return;
+  }
+
+  const mode = prompt("匯入模式：輸入 1 覆蓋全部 / 輸入 2 合併（保留本機，再加進來）", "2");
+  if(mode !== "1" && mode !== "2") return;
+
+  const incoming = payload.data;
+
+  if(mode === "1"){
+    state.tools = Array.isArray(incoming.tools) ? incoming.tools : [];
+    state.themes = Array.isArray(incoming.themes) ? incoming.themes : [];
+    state.vault = Array.isArray(incoming.vault) ? incoming.vault : [];
+    state.ui = incoming.ui || state.ui;
+  }else{
+    // merge by id (incoming wins if same id)
+    state.tools = mergeById(state.tools, incoming.tools);
+    state.themes = mergeById(state.themes, incoming.themes);
+    state.vault = mergeById(state.vault, incoming.vault);
+    state.ui = {...state.ui, ...(incoming.ui||{})};
+  }
+
   saveJSON(LS_KEYS.tools, state.tools);
   saveJSON(LS_KEYS.themes, state.themes);
   saveJSON(LS_KEYS.vault, state.vault);
   saveJSON(LS_KEYS.ui, state.ui);
+
+  alert("匯入完成！");
+  renderAll();
 }
 
-/* ------------------ Tabs ------------------ */
-function setActiveTab(tab){
-  state.ui.activeTab = tab;
-  persist();
-
-  $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  $$(".panel").forEach(p => p.classList.remove("active"));
-  $(`#panel-${tab}`).classList.add("active");
-}
-
-$$(".tab").forEach(btn=>{
-  btn.addEventListener("click", ()=> setActiveTab(btn.dataset.tab));
-});
-
-/* ------------------ Tools ------------------ */
-function toolSummary(t){
-  const tags = (t.tags || []).join(", ");
-  const one = t.oneLiner ? `• ${t.oneLiner}` : "";
-  const tg = tags ? `• #${tags}` : "";
-  return [one, tg].filter(Boolean).join(" ");
-}
-
-function renderTools(){
-  const q = ($("#toolSearch").value || "").trim().toLowerCase();
-  const list = $("#toolsList");
-  const filtered = state.tools.filter(t=>{
-    if(!q) return true;
-    const blob = `${t.name} ${t.oneLiner||""} ${(t.tags||[]).join(" ")} ${t.body||""}`.toLowerCase();
-    return blob.includes(q);
+function mergeById(currentArr, incomingArr){
+  const cur = Array.isArray(currentArr) ? currentArr : [];
+  const inc = Array.isArray(incomingArr) ? incomingArr : [];
+  const map = new Map(cur.map(x => [x.id, x]));
+  inc.forEach(x => {
+    if(x && x.id) map.set(x.id, x);
   });
+  return Array.from(map.values()).sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""));
+}
 
-  $("#toolsCount").textContent = String(filtered.length);
+/* ---------- Modals: Tool ---------- */
 
-  if(filtered.length === 0){
-    list.innerHTML = `<div class="status">目前沒有工具。按右上角「新增工具」，或點「建立示範工具」。</div>`;
-    return;
+const toolModal = $("#toolModal");
+const tool_id = $("#tool_id");
+const tool_name = $("#tool_name");
+const tool_one = $("#tool_one");
+const tool_content = $("#tool_content");
+const tool_tags = $("#tool_tags");
+const tool_status = $("#tool_status");
+const tool_ai = $("#tool_ai");
+const toolDeleteBtn = $("#toolDelete");
+const toolCopyBtn = $("#toolCopy");
+const toolSaveBtn = $("#toolSave");
+const toolModalTitle = $("#toolModalTitle");
+
+let editingToolId = null;
+
+function openToolModal(id=null){
+  editingToolId = id;
+  const isNew = !id;
+  toolModalTitle.textContent = isNew ? "新增工具" : "編輯工具";
+
+  if(isNew){
+    tool_id.value = uid("tool");
+    tool_name.value = "";
+    tool_one.value = "";
+    tool_content.value = "";
+    tool_tags.value = "";
+    tool_status.value = "draft";
+    tool_ai.value = "";
+    toolDeleteBtn.style.display = "none";
+  }else{
+    const t = state.tools.find(x=>x.id===id);
+    if(!t) return;
+    tool_id.value = t.id;
+    tool_name.value = t.name || "";
+    tool_one.value = t.one || "";
+    tool_content.value = t.content || "";
+    tool_tags.value = tagsToText(t.tags||[]);
+    tool_status.value = t.status || "draft";
+    tool_ai.value = t.aiPrompt || "";
+    toolDeleteBtn.style.display = "inline-flex";
   }
 
-  list.innerHTML = filtered.map(t=>`
-    <div class="item" data-id="${t.id}">
-      <div class="meta">
-        <strong>${escapeHTML(t.name)}</strong>
-        <span>${escapeHTML(toolSummary(t) || "（尚未填一句話用途/標籤）")}</span>
-      </div>
-      <div class="actions">
-        <button class="btn ghost" data-act="edit" type="button">編輯</button>
-        <button class="btn ghost" data-act="copy" type="button">複製卡片內容</button>
-        <button class="btn danger" data-act="del" type="button">刪除</button>
-      </div>
-    </div>
-  `).join("");
+  toolModal.showModal();
 }
 
-$("#toolSearch").addEventListener("input", renderTools);
+$("#btnAddTool").addEventListener("click", ()=> openToolModal(null));
 
-function upsertTool(tool){
-  const idx = state.tools.findIndex(t=>t.id===tool.id);
-  if(idx>=0) state.tools[idx] = tool;
-  else state.tools.unshift(tool);
-  persist();
-  renderTools();
-  renderPickToolsList();
-  renderThemesList();
-  renderSequence();
-  renderTryout();
-}
+toolSaveBtn.addEventListener("click", ()=>{
+  const id = tool_id.value || uid("tool");
+  const existing = state.tools.find(x=>x.id===id);
 
-function deleteTool(id){
-  // remove from themes sequences too
-  state.themes.forEach(th=>{
-    th.sequence = (th.sequence || []).filter(tid => tid !== id);
-  });
-  state.tools = state.tools.filter(t=>t.id!==id);
-  persist();
-  renderTools();
-  renderPickToolsList();
-  renderThemesList();
-  renderSequence();
-  renderTryout();
-}
-
-function openToolDialog(mode="add", tool=null){
-  const dlg = $("#toolDialog");
-  const title = $("#toolDlgTitle");
-  const status = $("#toolDlgStatus");
-  status.textContent = "";
-
-  const isEdit = mode === "edit";
-  title.textContent = isEdit ? "編輯工具" : "新增工具";
-
-  $("#toolName").value = tool?.name || "";
-  $("#toolOneLiner").value = tool?.oneLiner || "";
-  $("#toolBody").value = tool?.body || "";
-  $("#toolTags").value = (tool?.tags || []).join(", ");
-
-  const saveBtn = $("#toolSaveBtn");
-  saveBtn.onclick = (e)=>{
-    e.preventDefault();
-
-    const name = $("#toolName").value.trim();
-    if(!name){
-      status.textContent = "請輸入工具名稱。";
-      return;
-    }
-    const oneLiner = $("#toolOneLiner").value.trim();
-    const body = $("#toolBody").value.trim();
-    const tags = $("#toolTags").value.split(",").map(s=>s.trim()).filter(Boolean);
-
-    const next = {
-      id: isEdit ? tool.id : uid("tool"),
-      name,
-      oneLiner,
-      body,
-      tags,
-      updatedAt: nowISO(),
-      createdAt: isEdit ? tool.createdAt : nowISO()
-    };
-
-    upsertTool(next);
-    dlg.close();
+  const t = {
+    id,
+    name: (tool_name.value||"").trim(),
+    one: (tool_one.value||"").trim(),
+    content: (tool_content.value||"").trim(),
+    tags: normalizeTags(tool_tags.value),
+    status: tool_status.value || "draft",
+    aiPrompt: (tool_ai.value||"").trim(),
+    createdAt: existing?.createdAt || nowISO(),
+    updatedAt: nowISO(),
   };
 
-  dlg.showModal();
-}
+  upsertTool(t);
+  toolModal.close();
+});
 
-$("#btnAddTool").addEventListener("click", ()=> openToolDialog("add"));
+toolDeleteBtn.addEventListener("click", ()=>{
+  const id = tool_id.value;
+  toolModal.close();
+  deleteTool(id);
+});
 
-$("#toolsList").addEventListener("click", (e)=>{
-  const btn = e.target.closest("button");
-  if(!btn) return;
-  const item = e.target.closest(".item");
-  if(!item) return;
+toolCopyBtn.addEventListener("click", ()=>{
+  const id = tool_id.value;
+  const t = state.tools.find(x=>x.id===id);
+  if(!t) return;
+  copyToolCard(t);
+});
 
-  const id = item.dataset.id;
-  const tool = state.tools.find(t=>t.id===id);
-  if(!tool) return;
+/* ---------- Modals: Theme ---------- */
 
-  const act = btn.dataset.act;
-  if(act === "edit"){
-    openToolDialog("edit", tool);
-  }else if(act === "del"){
-    if(confirm(`要刪除「${tool.name}」嗎？（會同時從所有主題組合中移除）`)){
-      deleteTool(id);
-    }
-  }else if(act === "copy"){
-    const text = [
-      `【工具】${tool.name}`,
-      tool.oneLiner ? `【一句話用途】${tool.oneLiner}` : "",
-      tool.tags?.length ? `【標籤】${tool.tags.join(", ")}` : "",
-      tool.body ? `【內容】\n${tool.body}` : ""
-    ].filter(Boolean).join("\n");
-    navigator.clipboard?.writeText(text).then(()=>{
-      alert("已複製卡片內容。");
-    }).catch(()=>{
-      alert("複製失敗：你的瀏覽器可能不允許自動複製。");
-    });
+const themeModal = $("#themeModal");
+const theme_id = $("#theme_id");
+const theme_title = $("#theme_title");
+const theme_desc = $("#theme_desc");
+const theme_tags = $("#theme_tags");
+const theme_ai = $("#theme_ai");
+const themeDeleteBtn = $("#themeDelete");
+const themeCopyBtn = $("#themeCopy");
+const themeSaveBtn = $("#themeSave");
+const themeModalTitle = $("#themeModalTitle");
+
+const pickToolsList = $("#pickToolsList");
+const pickToolsEmpty = $("#pickToolsEmpty");
+const themeFlowList = $("#themeFlowList");
+const themeFlowEmpty = $("#themeFlowEmpty");
+
+let themeFlow = [];
+let editingThemeId = null;
+
+function openThemeModal(id=null){
+  editingThemeId = id;
+  const isNew = !id;
+  themeModalTitle.textContent = isNew ? "新增主題" : "編輯主題";
+
+  if(isNew){
+    theme_id.value = uid("theme");
+    theme_title.value = "";
+    theme_desc.value = "";
+    theme_tags.value = "";
+    theme_ai.value = "";
+    themeFlow = [];
+    themeDeleteBtn.style.display = "none";
+  }else{
+    const th = state.themes.find(x=>x.id===id);
+    if(!th) return;
+    theme_id.value = th.id;
+    theme_title.value = th.title || "";
+    theme_desc.value = th.desc || "";
+    theme_tags.value = tagsToText(th.tags||[]);
+    theme_ai.value = th.aiPrompt || "";
+    themeFlow = Array.isArray(th.toolIds) ? [...th.toolIds] : [];
+    themeDeleteBtn.style.display = "inline-flex";
   }
-});
 
-$("#btnSeedTools").addEventListener("click", ()=>{
-  if(state.tools.length > 0 && !confirm("工具庫已有內容，仍要加入示範工具嗎？")) return;
-
-  const demo = [
-    {
-      id: uid("tool"),
-      name: "黃金90秒｜呼吸陪伴",
-      oneLiner: "情緒升高時，陪你撐過系統切換的90秒，回到可以選擇的狀態。",
-      tags: ["呼吸","情緒","陪伴"],
-      body: "不用急。\n現在，只要陪呼吸走過 90 秒就好。\n\n（開始 90 秒）\n\n結束後：\n- 有一點鬆\n- 差不多\n- 還不行（可以再走一回）",
-      createdAt: nowISO(),
-      updatedAt: nowISO()
-    },
-    {
-      id: uid("tool"),
-      name: "快遞拒收｜想像法",
-      oneLiner: "被指責時，先把不屬於你的包裹退回原收件地址。",
-      tags: ["認知重構","界線","關係"],
-      body: "想像：對方的指責是一箱送錯的快遞。\n在心裡對自己說：\n「這是一份送錯的包裹，內容物不屬於我，我選擇退回。」",
-      createdAt: nowISO(),
-      updatedAt: nowISO()
-    },
-    {
-      id: uid("tool"),
-      name: "第三方視角｜把『我』換成『他』",
-      oneLiner: "把委屈縮小一點，讓勇氣長出來。",
-      tags: ["書寫","抽離","情緒"],
-      body: "拿出紙筆，寫下：\n「剛才那個被指責的『他』，發生了什麼事？」\n用第三人稱寫 5 行。\n你會發現：事情變小了，你變大了。",
-      createdAt: nowISO(),
-      updatedAt: nowISO()
-    }
-  ];
-
-  demo.forEach(upsertTool);
-  alert("已建立示範工具（可刪）。");
-});
-
-/* ------------------ Themes ------------------ */
-function getActiveTheme(){
-  return state.themes.find(t=>t.id === state.ui.activeThemeId) || null;
+  renderThemePicker();
+  renderThemeFlow();
+  themeModal.showModal();
 }
 
-function renderThemesList(){
-  const list = $("#themesList");
-  $("#themesCount").textContent = String(state.themes.length);
+$("#btnAddTheme").addEventListener("click", ()=> openThemeModal(null));
 
-  if(state.themes.length === 0){
-    list.innerHTML = `<div class="status">目前沒有主題。按右上角「新增主題」。</div>`;
+function renderThemePicker(){
+  pickToolsList.innerHTML = "";
+  if(state.tools.length === 0){
+    pickToolsEmpty.style.display = "block";
     return;
   }
+  pickToolsEmpty.style.display = "none";
 
-  list.innerHTML = state.themes.map(th=>{
-    const seqCount = (th.sequence||[]).length;
-    return `
-      <div class="item" data-id="${th.id}">
+  state.tools
+    .slice()
+    .sort((a,b)=> (b.updatedAt||"").localeCompare(a.updatedAt||""))
+    .forEach(t=>{
+      const el = document.createElement("div");
+      el.className = "item";
+      el.innerHTML = `
         <div class="meta">
-          <strong>${escapeHTML(th.name || "（未命名主題）")}</strong>
-          <span>${escapeHTML(th.goal || "")} ${seqCount ? `• 已選 ${seqCount} 張卡` : "• 尚未選卡"}</span>
+          <strong>${escapeHTML(t.name || "（未命名工具）")}</strong>
+          <div class="one">${escapeHTML(t.one || "")}</div>
         </div>
         <div class="actions">
-          <button class="btn ghost" data-act="open" type="button">開啟</button>
+          <button class="btn ghost" type="button">加入 →</button>
         </div>
-      </div>
-    `;
-  }).join("");
+      `;
+      el.querySelector("button").addEventListener("click", ()=>{
+        themeFlow.push(t.id);
+        renderThemeFlow();
+      });
+      pickToolsList.appendChild(el);
+    });
 }
 
-$("#themesList").addEventListener("click",(e)=>{
-  const btn = e.target.closest("button");
-  if(!btn) return;
-  const item = e.target.closest(".item");
-  if(!item) return;
-  if(btn.dataset.act !== "open") return;
+function renderThemeFlow(){
+  themeFlowList.innerHTML = "";
+  if(themeFlow.length === 0){
+    themeFlowEmpty.style.display = "block";
+    return;
+  }
+  themeFlowEmpty.style.display = "none";
 
-  state.ui.activeThemeId = item.dataset.id;
-  persist();
-  loadThemeIntoEditor();
+  themeFlow.forEach((id, idx)=>{
+    const t = state.tools.find(x=>x.id===id);
+    const el = document.createElement("div");
+    el.className = "item";
+    el.setAttribute("draggable", "true");
+    el.dataset.idx = String(idx);
+    el.innerHTML = `
+      <div class="meta">
+        <strong>${escapeHTML(`${idx+1}. ${(t?.name)||"（已刪除工具）"}`)}</strong>
+        <div class="one small">${escapeHTML(t?.one || "")}</div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" type="button" data-act="up">上移</button>
+        <button class="btn ghost" type="button" data-act="down">下移</button>
+        <button class="btn danger" type="button" data-act="remove">移除</button>
+      </div>
+    `;
+
+    el.querySelector('[data-act="up"]').addEventListener("click", ()=>{
+      if(idx<=0) return;
+      swap(themeFlow, idx, idx-1);
+      renderThemeFlow();
+    });
+    el.querySelector('[data-act="down"]').addEventListener("click", ()=>{
+      if(idx>=themeFlow.length-1) return;
+      swap(themeFlow, idx, idx+1);
+      renderThemeFlow();
+    });
+    el.querySelector('[data-act="remove"]').addEventListener("click", ()=>{
+      themeFlow.splice(idx,1);
+      renderThemeFlow();
+    });
+
+    // drag reorder (simple)
+    el.addEventListener("dragstart", (e)=>{
+      e.dataTransfer.setData("text/plain", String(idx));
+    });
+    el.addEventListener("dragover", (e)=> e.preventDefault());
+    el.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      const from = Number(e.dataTransfer.getData("text/plain"));
+      const to = idx;
+      if(Number.isNaN(from) || from===to) return;
+      const moved = themeFlow.splice(from,1)[0];
+      themeFlow.splice(to,0,moved);
+      renderThemeFlow();
+    });
+
+    themeFlowList.appendChild(el);
+  });
+}
+
+function swap(arr, i, j){
+  const tmp = arr[i];
+  arr[i]=arr[j];
+  arr[j]=tmp;
+}
+
+themeSaveBtn.addEventListener("click", ()=>{
+  const id = theme_id.value || uid("theme");
+  const existing = state.themes.find(x=>x.id===id);
+
+  const th = {
+    id,
+    title: (theme_title.value||"").trim(),
+    desc: (theme_desc.value||"").trim(),
+    toolIds: themeFlow.filter(Boolean),
+    tags: normalizeTags(theme_tags.value),
+    aiPrompt: (theme_ai.value||"").trim(),
+    createdAt: existing?.createdAt || nowISO(),
+    updatedAt: nowISO(),
+  };
+
+  upsertTheme(th);
+  themeModal.close();
 });
 
-$("#btnAddTheme").addEventListener("click", ()=>{
-  const th = {
-    id: uid("theme"),
-    name: "新主題（請改名）",
-    goal: "",
-    sequence: [],
+themeDeleteBtn.addEventListener("click", ()=>{
+  const id = theme_id.value;
+  themeModal.close();
+  deleteTheme(id);
+});
+
+themeCopyBtn.addEventListener("click", ()=>{
+  const id = theme_id.value;
+  const th = state.themes.find(x=>x.id===id);
+  if(!th) return;
+  copyThemeCard(th);
+});
+
+/* ---------- Modals: Vault ---------- */
+
+const vaultModal = $("#vaultModal");
+const vault_id = $("#vault_id");
+const vault_title = $("#vault_title");
+const vault_url = $("#vault_url");
+const vault_note = $("#vault_note");
+const vaultDeleteBtn = $("#vaultDelete");
+const vaultSaveBtn = $("#vaultSave");
+
+function openVaultModal(id=null){
+  const isNew = !id;
+  $("#vaultModalTitle").textContent = isNew ? "新增成品連結" : "編輯成品連結";
+
+  if(isNew){
+    vault_id.value = uid("vault");
+    vault_title.value = "";
+    vault_url.value = "";
+    vault_note.value = "";
+    vaultDeleteBtn.style.display = "none";
+  }else{
+    const v = state.vault.find(x=>x.id===id);
+    if(!v) return;
+    vault_id.value = v.id;
+    vault_title.value = v.title || "";
+    vault_url.value = v.url || "";
+    vault_note.value = v.note || "";
+    vaultDeleteBtn.style.display = "inline-flex";
+  }
+
+  vaultModal.showModal();
+}
+
+$("#btnAddVault").addEventListener("click", ()=> openVaultModal(null));
+
+vaultSaveBtn.addEventListener("click", ()=>{
+  const id = vault_id.value || uid("vault");
+  const existing = state.vault.find(x=>x.id===id);
+
+  const v = {
+    id,
+    title: (vault_title.value||"").trim(),
+    url: (vault_url.value||"").trim(),
+    note: (vault_note.value||"").trim(),
+    createdAt: existing?.createdAt || nowISO(),
+    updatedAt: nowISO(),
+  };
+
+  upsertVault(v);
+  vaultModal.close();
+});
+
+vaultDeleteBtn.addEventListener("click", ()=>{
+  const id = vault_id.value;
+  vaultModal.close();
+  deleteVault(id);
+});
+
+/* ---------- Seed buttons ---------- */
+
+$("#btnSeedTool").addEventListener("click", ()=>{
+  const demo = {
+    id: uid("tool"),
+    name: "暫停｜0.5 秒斷點",
+    one: "在自動化反應全速運轉前，切回系統管理員模式。",
+    content:
+`✨ 此刻我感受到的是：
+＿＿＿＿＿＿＿＿＿＿＿＿
+
+✨ 我願意先暫停 30～90 秒，
+讓身體先回來。`,
+    tags: ["#暫停","#斷點","#情緒急救","#自動化反應"],
+    status: "ready",
+    aiPrompt: "",
     createdAt: nowISO(),
     updatedAt: nowISO()
   };
-  state.themes.unshift(th);
-  state.ui.activeThemeId = th.id;
-  persist();
-
-  renderThemesList();
-  loadThemeIntoEditor();
-  setActiveTab("themes");
+  state.tools.unshift(demo);
+  persistTools();
+  renderAll();
 });
 
-function loadThemeIntoEditor(){
-  const th = getActiveTheme();
-  $("#activeThemeBadge").textContent = th ? "已選主題" : "未選主題";
-  $("#themeEmpty").classList.toggle("hidden", !!th);
-  $("#themeEditor").classList.toggle("hidden", !th);
-
-  if(!th) return;
-
-  $("#themeName").value = th.name || "";
-  $("#themeGoal").value = th.goal || "";
-
-  $("#vaultName").value = th.name || "";
-  $("#vaultVer").value = "";
-  $("#vaultUrl").value = "";
-  $("#vaultNote").value = "";
-
-  $("#themeStatus").textContent = "";
-  $("#promptBox").textContent = "";
-  $("#promptStatus").textContent = "";
-  $("#vaultSaveStatus").textContent = "";
-
-  renderPickToolsList();
-  renderSequence();
-  renderTryout();
-}
-
-function updateActiveTheme(fields){
-  const th = getActiveTheme();
-  if(!th) return;
-  Object.assign(th, fields, {updatedAt: nowISO()});
-  persist();
-  renderThemesList();
-}
-
-$("#themeName").addEventListener("input", ()=>{
-  updateActiveTheme({name: $("#themeName").value});
-  $("#vaultName").value = $("#themeName").value;
-});
-$("#themeGoal").addEventListener("input", ()=> updateActiveTheme({goal: $("#themeGoal").value}));
-
-/* pick tools */
-function renderPickToolsList(){
-  const th = getActiveTheme();
-  const box = $("#pickToolsList");
-  if(!box) return;
-
-  if(!th){
-    box.innerHTML = "";
-    return;
-  }
-  if(state.tools.length === 0){
-    box.innerHTML = `<div class="status">工具庫還沒有工具。先去「工具庫」新增工具卡。</div>`;
-    return;
-  }
-
-  const seqSet = new Set(th.sequence || []);
-  box.innerHTML = state.tools.map(t=>{
-    const checked = seqSet.has(t.id) ? "checked" : "";
-    return `
-      <label class="item" style="align-items:center">
-        <div class="meta">
-          <strong>${escapeHTML(t.name)}</strong>
-          <span>${escapeHTML(toolSummary(t) || "")}</span>
-        </div>
-        <div class="actions">
-          <input type="checkbox" data-tool-id="${t.id}" ${checked} aria-label="pick ${escapeHTML(t.name)}" />
-        </div>
-      </label>
-    `;
-  }).join("");
-
-  box.querySelectorAll("input[type=checkbox]").forEach(chk=>{
-    chk.addEventListener("change", ()=>{
-      const tid = chk.dataset.toolId;
-      const seq = th.sequence || [];
-      if(chk.checked){
-        if(!seq.includes(tid)) seq.push(tid);
-      }else{
-        th.sequence = seq.filter(x=>x!==tid);
-      }
-      updateActiveTheme({sequence: th.sequence});
-      renderSequence();
-      renderTryout();
-    });
-  });
-}
-
-/* sequence list */
-function renderSequence(){
-  const th = getActiveTheme();
-  const box = $("#sequenceList");
-  if(!box) return;
-
-  if(!th){
-    box.innerHTML = "";
-    return;
-  }
-
-  const seq = th.sequence || [];
-  if(seq.length === 0){
-    box.innerHTML = `<div class="status">尚未選卡。請在上方勾選工具加入組合。</div>`;
-    return;
-  }
-
-  box.innerHTML = seq.map((tid, idx)=>{
-    const t = state.tools.find(x=>x.id===tid);
-    const name = t ? t.name : "（已刪除的工具）";
-    return `
-      <div class="item" data-idx="${idx}">
-        <div class="meta">
-          <strong>${escapeHTML(String(idx+1).padStart(2,"0"))}. ${escapeHTML(name)}</strong>
-          <span>${escapeHTML(t ? toolSummary(t) : "此工具已不存在，建議移除")}</span>
-        </div>
-        <div class="actions">
-          <button class="btn ghost" data-act="up" type="button">上移</button>
-          <button class="btn ghost" data-act="down" type="button">下移</button>
-          <button class="btn danger" data-act="remove" type="button">移除</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  box.querySelectorAll("button").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const item = btn.closest(".item");
-      const idx = Number(item.dataset.idx);
-      const act = btn.dataset.act;
-
-      const seq2 = [...(th.sequence||[])];
-      if(act === "up" && idx>0){
-        [seq2[idx-1], seq2[idx]] = [seq2[idx], seq2[idx-1]];
-      }else if(act === "down" && idx<seq2.length-1){
-        [seq2[idx+1], seq2[idx]] = [seq2[idx], seq2[idx+1]];
-      }else if(act === "remove"){
-        seq2.splice(idx,1);
-      }
-      updateActiveTheme({sequence: seq2});
-      renderPickToolsList();
-      renderSequence();
-      renderTryout();
-    });
-  });
-}
-
-/* Tryout */
-function tryoutIndex(){
-  const th = getActiveTheme();
-  if(!th) return 0;
-  const map = state.ui.tryoutIndexByTheme || {};
-  return map[th.id] ?? 0;
-}
-function setTryoutIndex(i){
-  const th = getActiveTheme();
-  if(!th) return;
-  if(!state.ui.tryoutIndexByTheme) state.ui.tryoutIndexByTheme = {};
-  state.ui.tryoutIndexByTheme[th.id] = i;
-  persist();
-}
-
-function renderTryout(){
-  const th = getActiveTheme();
-  const box = $("#tryoutBox");
-  if(!box) return;
-
-  if(!th){
-    box.textContent = "尚未選主題。";
-    return;
-  }
-  const seq = th.sequence || [];
-  if(seq.length === 0){
-    box.textContent = "尚未開始。請先在「已選組合」加入至少 1 張卡。";
-    return;
-  }
-
-  let idx = tryoutIndex();
-  if(idx < 0) idx = 0;
-  if(idx > seq.length-1) idx = seq.length-1;
-  setTryoutIndex(idx);
-
-  const tool = state.tools.find(t=>t.id===seq[idx]);
-  const title = tool ? tool.name : "（已刪除的工具）";
-  const body = tool?.body || "（此卡尚未填內容）";
-
-  box.innerHTML = `
-    <div><strong>${escapeHTML(`${idx+1}/${seq.length}  ${title}`)}</strong></div>
-    <div class="sep"></div>
-    <div class="status">${escapeHTML(body)}</div>
-  `;
-}
-
-$("#btnStartTry").addEventListener("click", ()=>{
-  const th = getActiveTheme();
-  if(!th) return;
-  if((th.sequence||[]).length === 0){
-    alert("請先加入至少 1 張卡。");
-    return;
-  }
-  setTryoutIndex(0);
-  renderTryout();
-});
-
-$("#btnPrev").addEventListener("click", ()=>{
-  const th = getActiveTheme();
-  if(!th) return;
-  const seq = th.sequence || [];
-  if(seq.length === 0) return;
-  setTryoutIndex(Math.max(0, tryoutIndex()-1));
-  renderTryout();
-});
-$("#btnNext").addEventListener("click", ()=>{
-  const th = getActiveTheme();
-  if(!th) return;
-  const seq = th.sequence || [];
-  if(seq.length === 0) return;
-  setTryoutIndex(Math.min(seq.length-1, tryoutIndex()+1));
-  renderTryout();
-});
-
-/* Prompt generation */
-function buildPromptForTheme(th){
-  const tools = (th.sequence||[])
-    .map(id => state.tools.find(t=>t.id===id))
-    .filter(Boolean);
-
-  const brandTone = [
-    "品牌語感：把心站穩、活得自在；不說教、溫柔而篤定；要有畫面感；要可落地、可直接使用。",
-    "系統定錨（隱性）：任何時候停下來，都可以。只要舒服，就很好。",
-    "命名與路徑規則：GitHub repo / 檔案 / 資料夾全部英文；資產路徑使用 assets/icons、assets/audio。"
-  ].join("\n");
-
-  const toolBlocks = tools.map((t,i)=>[
-    `【工具${i+1}】${t.name}`,
-    t.oneLiner ? `【一句話用途】${t.oneLiner}` : "",
-    t.tags?.length ? `【標籤】${t.tags.join(", ")}` : "",
-    `【卡片內容】\n${t.body || "（待補）"}`
-  ].filter(Boolean).join("\n")).join("\n\n");
-
-  const skeleton = [
-    "你是「天使笑長」的協作夥伴。請依照以下輸入，產出「獨立 PWA」的完整覆蓋版檔案：index.html / style.css / app.js / manifest.json / sw.js。",
-    "",
-    brandTone,
-    "",
-    `【主題】${th.name || "（未命名）"}`,
-    th.goal ? `【一句話目標】${th.goal}` : "【一句話目標】（可選）",
-    "",
-    "【功能需求】",
-    "- 這是一個單一主題的陪伴型 PWA（非工房）。",
-    "- 依照下方工具順序呈現（上一張/下一張），也可以一鍵開始（從第1張）。",
-    "- 每張卡顯示：工具名 + 內容。",
-    "- 提供一鍵複製『當下這張卡的內容』。",
-    "- 介面簡約有質感、減法舒壓、不壓迫。",
-    "",
-    "【工具順序與內容】",
-    toolBlocks,
-    "",
-    "【輸出要求】",
-    "- 所有路徑英文；icons 放 assets/icons；如有音檔放 assets/audio。",
-    "- manifest 設定 icon-192.png & icon-512.png；theme_color 與背景走深綠系。",
-    "- service worker 基礎離線快取。",
-    "- 請直接給完整可覆蓋的檔案內容，不要只給差異。"
-  ].join("\n");
-
-  return skeleton;
-}
-
-$("#btnGenPrompt").addEventListener("click", ()=>{
-  const th = getActiveTheme();
-  if(!th) return;
-
-  if((th.sequence||[]).length === 0){
-    alert("主題尚未選任何工具卡，無法生成咒語。");
-    return;
-  }
-
-  const prompt = buildPromptForTheme(th);
-  $("#promptBox").textContent = prompt;
-  $("#promptStatus").textContent = "已生成。你可以按「一鍵複製」貼給 AI 協作（成品請在新的 repo 建立）。";
-});
-
-$("#btnCopyPrompt").addEventListener("click", ()=>{
-  const text = $("#promptBox").textContent || "";
-  if(!text.trim()){
-    alert("目前沒有咒語內容。請先按「生成咒語」。");
-    return;
-  }
-  navigator.clipboard?.writeText(text).then(()=>{
-    $("#promptStatus").textContent = "已複製到剪貼簿。";
-  }).catch(()=>{
-    $("#promptStatus").textContent = "複製失敗：你的瀏覽器可能不允許自動複製。";
-  });
-});
-
-/* Theme delete / import export */
-$("#btnDeleteTheme").addEventListener("click", ()=>{
-  const th = getActiveTheme();
-  if(!th) return;
-  if(!confirm(`要刪除主題「${th.name}」嗎？`)) return;
-
-  state.themes = state.themes.filter(x=>x.id!==th.id);
-  state.ui.activeThemeId = state.themes[0]?.id || null;
-  persist();
-
-  renderThemesList();
-  loadThemeIntoEditor();
-});
-
-$("#btnExportTheme").addEventListener("click", ()=>{
-  const th = getActiveTheme();
-  if(!th) return;
-  const blob = new Blob([JSON.stringify(th,null,2)], {type:"application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `theme-${(th.name||"untitled").replaceAll(" ","-")}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
-
-$("#btnImportTheme").addEventListener("click", ()=>{
-  $("#importThemeFile").click();
-});
-
-$("#importThemeFile").addEventListener("change", async (e)=>{
-  const file = e.target.files?.[0];
-  if(!file) return;
-  try{
-    const text = await file.text();
-    const th = JSON.parse(text);
-    if(!th || !th.id) throw new Error("invalid");
-    // ensure id unique
-    th.id = uid("theme");
-    th.createdAt = nowISO();
-    th.updatedAt = nowISO();
-    state.themes.unshift(th);
-    state.ui.activeThemeId = th.id;
-    persist();
-    renderThemesList();
-    loadThemeIntoEditor();
-    $("#themeStatus").textContent = "已匯入主題。";
-  }catch(err){
-    alert("匯入失敗：檔案不是有效的主題 JSON。");
-  }finally{
-    e.target.value = "";
-  }
-});
-
-/* ------------------ Vault ------------------ */
-function renderVault(){
-  const q = ($("#vaultSearch").value || "").trim().toLowerCase();
-  const box = $("#vaultList");
-
-  const filtered = state.vault.filter(v=>{
-    if(!q) return true;
-    const blob = `${v.name||""} ${v.version||""} ${v.url||""} ${v.note||""} ${v.themeName||""}`.toLowerCase();
-    return blob.includes(q);
-  });
-
-  $("#vaultCount").textContent = String(filtered.length);
-
-  if(filtered.length === 0){
-    box.innerHTML = `<div class="status">倉庫目前是空的。當你完成某個獨立 PWA 發佈，把網址貼回來存放即可。</div>`;
-    return;
-  }
-
-  box.innerHTML = filtered.map(v=>`
-    <div class="item" data-id="${v.id}">
-      <div class="meta">
-        <strong>${escapeHTML(v.name || v.themeName || "（未命名成品）")}</strong>
-        <span>${escapeHTML([v.version ? `版本 ${v.version}`:"", v.url? v.url:"", v.note? `備註：${v.note}`:""].filter(Boolean).join(" • "))}</span>
-      </div>
-      <div class="actions">
-        <a class="btn ghost" href="${escapeHTML(v.url||"#")}" target="_blank" rel="noopener">開啟</a>
-        <button class="btn ghost" data-act="copy" type="button">複製網址</button>
-        <button class="btn danger" data-act="del" type="button">刪除</button>
-      </div>
-    </div>
-  `).join("");
-}
-
-$("#vaultSearch").addEventListener("input", renderVault);
-
-$("#vaultList").addEventListener("click",(e)=>{
-  const btn = e.target.closest("button");
-  if(!btn) return;
-  const item = e.target.closest(".item");
-  if(!item) return;
-  const id = item.dataset.id;
-  const v = state.vault.find(x=>x.id===id);
-  if(!v) return;
-
-  const act = btn.dataset.act;
-  if(act === "del"){
-    if(confirm("要刪除這筆成品連結嗎？")){
-      state.vault = state.vault.filter(x=>x.id!==id);
-      persist();
-      renderVault();
-    }
-  }else if(act === "copy"){
-    navigator.clipboard?.writeText(v.url||"").then(()=>{
-      alert("已複製網址。");
-    }).catch(()=>{
-      alert("複製失敗。");
-    });
-  }
-});
-
-$("#btnSaveVault").addEventListener("click", ()=>{
-  const th = getActiveTheme();
-  const name = ($("#vaultName").value || (th?.name||"")).trim();
-  const version = ($("#vaultVer").value || "").trim();
-  const url = ($("#vaultUrl").value || "").trim();
-  const note = ($("#vaultNote").value || "").trim();
-
-  if(!url || !/^https?:\/\//i.test(url)){
-    $("#vaultSaveStatus").textContent = "請貼上有效的網址（需以 http/https 開頭）。";
-    return;
-  }
-
-  const entry = {
+$("#btnSeedVault").addEventListener("click", ()=>{
+  const demo = {
     id: uid("vault"),
-    name: name || (th?.name||""),
-    version,
-    url,
-    note,
-    themeId: th?.id || null,
-    themeName: th?.name || "",
-    createdAt: nowISO()
+    title: "示範｜90秒呼吸（獨立PWA）",
+    url: "https://example.com/",
+    note: "把你未來做出的獨立PWA網址放這裡，日後一鍵取用。",
+    createdAt: nowISO(),
+    updatedAt: nowISO()
   };
-
-  state.vault.unshift(entry);
-  persist();
-  $("#vaultSaveStatus").textContent = "已存到倉庫。";
-  renderVault();
+  state.vault.unshift(demo);
+  persistVault();
+  renderAll();
 });
 
-$("#btnExportVault").addEventListener("click", ()=>{
-  const blob = new Blob([JSON.stringify(state.vault,null,2)], {type:"application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `vault.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+/* ---------- Search inputs ---------- */
+$("#toolsSearch").addEventListener("input", renderTools);
+$("#themesSearch").addEventListener("input", renderThemes);
+
+/* ---------- Export/Import buttons ---------- */
+$("#btnExport").addEventListener("click", exportAll);
+
+const importFile = $("#importFile");
+$("#btnImport").addEventListener("click", ()=>{
+  importFile.value = "";
+  importFile.click();
+});
+importFile.addEventListener("change", ()=>{
+  const f = importFile.files?.[0];
+  if(!f) return;
+  importAllFromFile(f);
 });
 
-$("#btnImportVault").addEventListener("click", ()=> $("#importVaultFile").click());
+/* ---------- Initial tab ---------- */
+(function init(){
+  const tab = state.ui?.activeTab || "tools";
+  setActiveTab(tab);
+  renderAll();
+})();
 
-$("#importVaultFile").addEventListener("change", async (e)=>{
-  const file = e.target.files?.[0];
-  if(!file) return;
-  try{
-    const text = await file.text();
-    const data = JSON.parse(text);
-    if(!Array.isArray(data)) throw new Error("invalid");
-    // normalize ids
-    const normalized = data.map(v=>({
-      id: uid("vault"),
-      name: v.name || "",
-      version: v.version || "",
-      url: v.url || "",
-      note: v.note || "",
-      themeId: v.themeId || null,
-      themeName: v.themeName || "",
-      createdAt: v.createdAt || nowISO()
-    })).filter(v=>v.url);
-
-    state.vault = normalized.concat(state.vault);
-    persist();
-    renderVault();
-    alert("已匯入倉庫資料。");
-  }catch(err){
-    alert("匯入失敗：檔案不是有效的倉庫 JSON。");
-  }finally{
-    e.target.value = "";
-  }
-});
-
-/* ------------------ SW register ------------------ */
-if("serviceWorker" in navigator){
-  window.addEventListener("load", ()=>{
-    navigator.serviceWorker.register("./sw.js").catch(()=>{});
-  });
+/* ---------- Helpers ---------- */
+function escapeHTML(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
 }
-
-/* ------------------ Init ------------------ */
-function init(){
-  setActiveTab(state.ui.activeTab || "tools");
-
-  renderTools();
-  renderThemesList();
-  loadThemeIntoEditor();
-  renderVault();
-
-  // Auto-open themes editor if activeTab is themes
-  if(state.ui.activeTab === "themes" && state.ui.activeThemeId){
-    loadThemeIntoEditor();
-  }
+function escapeAttr(s){
+  return escapeHTML(s).replaceAll("\n"," ").trim();
 }
-
-init();
