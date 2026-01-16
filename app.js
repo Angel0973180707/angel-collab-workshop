@@ -853,3 +853,9 @@ function escapeHTML(s){
 function escapeAttr(s){
   return escapeHTML(s).replaceAll("\n"," ").trim();
 }
+// Register Service Worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(console.warn);
+  });
+}
